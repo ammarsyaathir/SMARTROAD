@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRoad | Dashboard Control Desk</title>
+    
+    <!-- External Dependencies: Tailwind CSS, Google Fonts, & FontAwesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Configuration for Custom Color Tokens -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            slate: '#0f172a',
+                            sky: '#38bdf8',
+                            blue: '#2563eb',
+                            hover: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Status Color Badge Mappings */
+        .status-badge-New { background-color: #fef2f2; color: #ef4444; }
+        .status-badge-In-Progress { background-color: #fffbeb; color: #d97706; }
+        .status-badge-Resolved { background-color: #ecfdf5; color: #10b981; }
+
+        /* Custom Scrollbar for Details Modal */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+
+    <!-- Global safe-load wrapper to prevent race conditions with module-based script loads -->
+    <script>
+        window.gmapsLoaded = false;
+        window.initMap = function() {
+            window.gmapsLoaded = true;
+            if (typeof window.initMapReal === 'function') {
+                window.initMapReal();
+            }
+        };
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+
+    <!-- Reusable Top Navigation Bar -->
+    <header class="sticky top-0 w-full h-[70px] bg-brand-slate text-white flex items-center justify-between px-6 md:px-10 z-50 shadow-md">
+        <div class="brand flex items-center gap-3 text-xl md:text-22px font-bold text-brand-sky">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>SmartRoad Admin</span>
+        </div>
+        <nav class="flex gap-2">
+            <a href="index.html" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-chart-line"></i> <span class="hidden sm:inline">Dashboard</span></a>
+            <a href="add-hazard.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-plus"></i> <span class="hidden sm:inline">Add Hazard</span></a>
+            <a href="members.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-users"></i> <span class="hidden sm:inline">Members</span></a>
+            <a href="settings.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-gears"></i> <span class="hidden sm:inline">Settings</span></a>
+            <a href="about.html" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-info"></i> <span class="hidden sm:inline">About</span></a>
+
+        </nav>
+    </header>
+
+    <main class="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Control Console Dashboard</h1>
+            <p class="text-slate-500 text-sm mt-1">Real-Time Road Incident Validation, Spatial Mapping, & Complaint Management pipeline</p>
+        </div>
+
+        <!-- Metrics Cards Section -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Complaints</h3>
+                    <p id="total-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center text-xl"><i class="fa-solid fa-database"></i></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">New/Open</h3>
+                    <p id="new-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-red-50 text-red-500 flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">In Progress</h3>
+                    <p id="progress-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center text-xl"><i class="fa-solid fa-person-digging"></i></div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Resolved</h3>
+                    <p id="resolved-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+        </div>
+
+        <!-- Google Maps Layout Frame -->
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900"><i class="fa-solid fa-map-location-dot text-brand-blue"></i> Geographic Density Mapping Distribution</h2>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-8">
+            <div id="map" class="w-full h-[400px] rounded-lg shadow-inner"></div>
+        </div>
+
+        <!-- Filtering & Search Strip -->
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900"><i class="fa-solid fa-list-check"></i> Manage Incident Statements</h2>
+        <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-center justify-between mb-6">
+            <div class="relative flex-1 min-w-[280px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchBar" placeholder="Search by user reporter name..." onkeyup="filterReports()" class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-blue transition-colors bg-slate-50 focus:bg-white">
+            </div>
+            
+            <div class="flex flex-wrap gap-3 items-center w-full lg:w-auto">
+                <select id="typeFilter" onchange="filterReports()" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                    <option value="">All Hazard Configurations</option>
+                    <option value="Pothole">Pothole</option>
+                    <option value="Flood">Flood</option>
+                    <option value="Accident">Accident</option>
+                    <option value="Fallen Tree">Fallen Tree</option>
+                    <option value="Damaged Road Sign">Damaged Road Sign</option>
+                    <option value="Broken Traffic Light">Broken Traffic Light</option>
+                </select>
+
+                <input type="date" id="dateFilter" onchange="filterReports()" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white outline-none focus:border-brand-blue transition-colors">
+
+                <select id="statusFilter" onchange="filterReports()" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                    <option value="">All Active Statuses</option>
+                    <option value="New">New</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Incidents Data List Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-12">
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-400 font-semibold uppercase text-xs border-b border-slate-200">
+                            <th class="p-4">Report ID</th>
+                            <th class="p-4">User Profile</th>
+                            <th class="p-4">Hazard Specifics</th>
+                            <th class="p-4">Status Control</th>
+                            <th class="p-4">Priority</th>
+                            <th class="p-4">Coordinates</th>
+                            <th class="p-4">Timestamp</th>
+                            <th class="p-4 text-center">Evidence</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100">
+                        <!-- Populated dynamically via FireStore Logic Stream -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING TOAST BANNER -->
+    <div id="toastBanner" class="fixed bottom-6 right-6 bg-emerald-500 text-white px-6 py-4 rounded-lg font-semibold shadow-lg flex items-center gap-3 translate-y-[150px] transition-transform duration-300 z-[10000]">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMessage">Action completed successfully!</span>
+    </div>
+
+    <!-- UX CONFIRMATION MODAL OVERLAY -->
+    <div id="confirmationModal" class="modal-overlay hidden opacity-0 pointer-events-none fixed inset-0 w-full h-full bg-slate-900/60 flex items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="modal-box bg-white p-7 rounded-xl w-full max-w-[440px] shadow-2xl scale-95 transition-transform duration-200">
+            <div id="modalHeader" class="flex items-center gap-3 mb-4 text-lg font-bold"></div>
+            <div id="modalBody" class="text-sm text-slate-500 mb-6 leading-relaxed"></div>
+            <div class="modal-footer flex justify-end gap-3">
+                <button class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" onclick="closeConfirmationModal()">Cancel</button>
+                <button id="modalConfirmBtn" class="px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEEP-DIVE DETAILS OVERLAY MODAL -->
+    <div id="detailsModal" class="modal-overlay hidden opacity-0 pointer-events-none fixed inset-0 w-full h-full bg-slate-900/60 flex items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="modal-box bg-white p-0 rounded-2xl w-full max-w-[700px] shadow-2xl scale-95 transition-all duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white px-8 py-5 flex items-center justify-between">
+                <div class="flex flex-col">
+                    <span id="detailsModalTitle" class="text-brand-sky font-bold text-lg flex items-center gap-2">Report Details</span>
+                    <span id="detailsModalSub" class="text-xs text-slate-400 mt-0.5">Real-time incident metadata validation profile</span>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-white text-2xl transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-8 overflow-y-auto custom-scroll flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="flex flex-col gap-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Reporter Profile</span>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center" id="detUserInit">U</div>
+                            <div>
+                                <div id="detUser" class="text-sm font-bold text-slate-800">---</div>
+                                <span class="text-[11px] text-slate-400 font-medium">Registered Mobile Member</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Incident Category</span>
+                        <div id="detType" class="text-sm font-bold text-slate-800 bg-blue-50/50 text-brand-blue border border-blue-100 px-3 py-2 rounded-lg inline-flex items-center gap-2">---</div>
+                    </div>
+                    
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Geographical GPS Location</span>
+                        <div class="flex items-center gap-2">
+                            <div id="detCoords" class="text-sm font-bold text-slate-800 font-mono">---</div>
+                            <button id="detLocateBtn" class="text-brand-blue hover:text-brand-hover text-xs font-semibold flex items-center gap-1 transition-colors" title="Locate on Dashboard Map">
+                                <i class="fa-solid fa-location-crosshairs"></i> Locate
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Submitted Timestamp</span>
+                        <div id="detTimestamp" class="text-sm font-medium text-slate-700">---</div>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Device Client Payload (User-Agent)</span>
+                        <div id="detAgent" class="text-[11px] text-slate-500 font-mono bg-slate-100 p-2.5 border border-slate-200 rounded-lg mt-1 break-all">---</div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-5">
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Evidence Photo Attachment</span>
+                        <a id="detImageLink" href="#" target="_blank" class="block group relative overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-slate-100">
+                            <img id="detImage" src="https://via.placeholder.com/300x200" alt="Evidence" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition-opacity duration-200"><i class="fa-solid fa-magnifying-glass-plus mr-1.5"></i> View Full Image</div>
+                        </a>
+                    </div>
+                    
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Description Summary Statement</span>
+                        <div id="detDesc" class="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-24 overflow-y-auto leading-relaxed custom-scroll">---</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-5 bg-slate-50 p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <label for="detStatusSelect" class="text-xs text-slate-500 font-bold uppercase tracking-wider whitespace-nowrap">Complaint Status:</label>
+                    <select id="detStatusSelect" class="px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue w-full sm:w-48 shadow-sm">
+                        <option value="New">New</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+                <div class="flex gap-2.5 w-full sm:w-auto justify-end">
+                    <button class="px-4 py-2.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors shadow-sm" onclick="closeDetailsModal()">Close Details</button>
+                    <button id="detSaveStatusBtn" class="px-5 py-2.5 rounded-lg text-xs font-bold bg-brand-blue hover:bg-brand-hover text-white transition-all flex items-center gap-1.5 shadow-md"><i class="fa-solid fa-floppy-disk"></i> Save Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT INCIDENT LOG MODAL OVERLAY -->
+    <div id="editHazardModal" class="modal-overlay hidden opacity-0 pointer-events-none fixed inset-0 w-full h-full bg-slate-900/60 flex items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="modal-box bg-white p-7 rounded-xl w-full max-w-[550px] shadow-2xl scale-95 transition-transform duration-200 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <span class="text-brand-blue font-bold text-lg"><i class="fa-solid fa-pen-to-square"></i> Edit Hazard Record</span>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-xl transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="editHazardForm" onsubmit="updateHazardRecord(event)" class="flex flex-col gap-4">
+                <input type="hidden" id="editReportId">
+                <div class="flex flex-col gap-1.5">
+                    <label for="editTypeInput" class="text-xs font-bold text-slate-700">Hazard Classification Type</label>
+                    <select id="editTypeInput" required class="p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue">
+                        <option value="Pothole">Pothole</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Accident">Accident</option>
+                        <option value="Fallen Tree">Fallen Tree</option>
+                        <option value="Damaged Road Sign">Damaged Road Sign</option>
+                        <option value="Broken Traffic Light">Broken Traffic Light</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label for="editLatitudeInput" class="text-xs font-bold text-slate-700">Latitude Coordinate</label>
+                        <input type="number" step="any" id="editLatitudeInput" required class="p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label for="editLongitudeInput" class="text-xs font-bold text-slate-700">Longitude Coordinate</label>
+                        <input type="number" step="any" id="editLongitudeInput" required class="p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue">
+                    </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="editDescriptionInput" class="text-xs font-bold text-slate-700">Description Summary Statement</label>
+                    <textarea id="editDescriptionInput" rows="3" required class="p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue"></textarea>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label for="editImageUrlInput" class="text-xs font-bold text-slate-700">Evidence Image Resource URL</label>
+                    <input type="url" id="editImageUrlInput" required class="p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue">
+                </div>
+                
+                <div class="modal-footer flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                    <button type="button" class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-brand-blue hover:bg-brand-hover shadow-sm">Save Modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Google Maps Core SDK Setup -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYCW0NkFXTP2cK-EKpoeVcMrJZuM9MIms&callback=initMap" async defer></script>
+
+    <!-- Firestore Streaming Operations Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBk8kuzTObIibyXjP2vSOdnttz9hy0zh7A",
+          authDomain: "fir-mapapp-6d8d9.firebaseapp.com",
+          databaseURL: "https://fir-mapapp-6d8d9-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "fir-mapapp-6d8d9",
+          storageBucket: "fir-mapapp-6d8d9.firebasestorage.app",
+          messagingSenderId: "508858384144",
+          appId: "1:508858384144:web:d6c562be2ed98fe5c0ef95",
+          measurementId: "G-ZV2Q428QD5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let allReports = [];
+        let map;
+        let activeMarkers = {};
+        let pendingAction = null;
+
+        // Initialize Google Maps Component Engine Workspace
+        window.initMapReal = function() {
+            const latVal = parseFloat(localStorage.getItem('setMapCenterLat')) || 4.2105;
+            const lngVal = parseFloat(localStorage.getItem('setMapCenterLng')) || 101.9758;
+            const zoomVal = parseInt(localStorage.getItem('setMapZoom')) || 6;
+            
+            const startingCenter = { lat: latVal, lng: lngVal };
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: zoomVal,
+                center: startingCenter,
+                mapId: "DEMO_MAP_ID",
+            });
+            
+            if (allReports.length > 0) {
+                updateMapMarkers(allReports);
+            }
+        };
+
+        // If Google Maps API callback executed before this module script was loaded and resolved
+        if (window.gmapsLoaded) {
+            window.initMapReal();
+        }
+
+        // Plot dynamic markers across the map framework layout matching report properties
+        function updateMapMarkers(dataList) {
+            for (let id in activeMarkers) {
+                activeMarkers[id].marker.setMap(null);
+            }
+            activeMarkers = {};
+
+            if (dataList.length === 0 || !map) return;
+
+            const bounds = new google.maps.LatLngBounds();
+            let validPointsCount = 0;
+
+            dataList.forEach(report => {
+                if (report.latitude && report.longitude) {
+                    const lat = parseFloat(report.latitude);
+                    const lng = parseFloat(report.longitude);
+                    let colorCode = report.status === 'New' ? '#ef4444' : (report.status === 'In Progress' ? '#f59e0b' : '#10b981');
+
+                    const marker = new google.maps.Marker({
+                        position: { lat: lat, lng: lng },
+                        map: map,
+                        title: report.hazardType,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            fillColor: colorCode,
+                            fillOpacity: 0.9,
+                            scale: 8,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2,
+                        }
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="font-family:'Inter',sans-serif; padding:4px;">
+                                <strong style="font-size:13px;color:#0f172a;">${report.hazardType}</strong><br>
+                                <span style="font-size:11px;color:#64748b;">By: ${report.reportedBy || 'User'}</span><br>
+                                <span style="display:inline-block;margin-top:4px;padding:2px 6px;font-size:10px;font-weight:700;border-radius:10px;background:${colorCode}20;color:${colorCode};">${report.status}</span>
+                            </div>
+                        `
+                    });
+
+                    marker.addListener("click", () => {
+                        infoWindow.open(map, marker);
+                    });
+
+                    activeMarkers[report.id] = { marker, infoWindow, lat, lng };
+                    bounds.extend(marker.getPosition());
+                    validPointsCount++;
+                }
+            });
+
+            if (validPointsCount > 0) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        // Active Firestore Stream Framework Engine for Hazards
+        onSnapshot(collection(db, "hazards"), (snapshot) => {
+            allReports = [];
+            let total = 0, countNew = 0, countProgress = 0, countDone = 0;
+
+            snapshot.forEach((doc) => {
+                let data = doc.data();
+                data.id = doc.id;
+                allReports.push(data);
+
+                total++;
+                if (data.status === "New") countNew++;
+                else if (data.status === "In Progress" || data.status === "Under Investigation") countProgress++;
+                else if (data.status === "Resolved") countDone++;
+            });
+
+            document.getElementById('total-count').innerText = total;
+            document.getElementById('new-count').innerText = countNew;
+            document.getElementById('progress-count').innerText = countProgress;
+            document.getElementById('resolved-count').innerText = countDone;
+
+            window.filterReports(); 
+        });
+
+        // HTML tables generator
+        function renderTable(dataList) {
+            const tbody = document.getElementById("table-body");
+            tbody.innerHTML = "";
+
+            if (dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-slate-400 py-10 font-medium">No operational hazard notifications matched target filter parameters.</td></tr>`;
+                return;
+            }
+
+            dataList.forEach(report => {
+                let currentStatus = report.status;
+                if (currentStatus === "Under Investigation") currentStatus = "In Progress"; 
+
+                let themeClass = "new-state";
+                if (currentStatus === "In Progress") themeClass = "progress-state";
+                if (currentStatus === "Resolved") themeClass = "resolved-state";
+
+                let priorityText = "LOW";
+                let priorityClass = "bg-slate-100 text-slate-600";
+                
+                if (report.hazardType === "Accident" || report.hazardType === "Flood") {
+                    priorityText = "CRITICAL";
+                    priorityClass = "bg-red-100 text-red-700 font-extrabold";
+                } else if (report.hazardType === "Pothole" || report.hazardType === "Broken Traffic Light") {
+                    priorityText = "MEDIUM";
+                    priorityClass = "bg-orange-100 text-orange-700 font-bold";
+                }
+
+                let displayDate = "---", displayTime = "";
+                if (report.submit && typeof report.submit.toDate === 'function') {
+                    const jsDate = report.submit.toDate(); 
+                    displayDate = jsDate.toLocaleDateString('en-GB'); 
+                    displayTime = jsDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                } else if (report.date) {
+                    displayDate = report.date;
+                    displayTime = report.time || "";
+                }
+
+                let row = `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4">
+                        <a href="#" class="report-id-link text-brand-blue font-bold hover:underline" onclick="openDetailsModal('${report.id}'); event.preventDefault();">
+                            #${report.id.substring(0,6)}
+                        </a>
+                    </td>
+                    <td class="p-4">
+                        <span class="user-name text-slate-800 font-semibold block">${report.reportedBy || 'Anonymous'}</span>
+                        <span class="agent-info text-slate-400 text-xs block mt-0.5">${report.userAgent || 'App Platform Client'}</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="font-bold text-slate-800 block">${report.hazardType}</span>
+                        <span class="text-slate-400 text-xs block max-w-xs truncate">${report.description || 'No description summary.'}</span>
+                    </td>
+                    <td class="p-4">
+                        <select title="Change Status Option" class="status-select px-3 py-1.5 rounded-full text-xs font-semibold outline-none cursor-pointer select-none bg-slate-100 border-none ${themeClass}" onchange="promptStatusChange('${report.id}', this.value, '${currentStatus}')">
+                            <option value="New" ${currentStatus==='New'?'selected':''}>New</option>
+                            <option value="In Progress" ${currentStatus==='In Progress'?'selected':''}>In Progress</option>
+                            <option value="Resolved" ${currentStatus==='Resolved'?'selected':''}>Resolved</option>
+                        </select>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded text-[11px] font-semibold tracking-wider ${priorityClass}">${priorityText}</span>
+                    </td>
+                    <td class="p-4 text-slate-600 font-mono text-xs">
+                        <button onclick="focusOnMap('${report.id}'); event.preventDefault();" class="hover:text-brand-blue text-left transition-colors flex items-center gap-1" title="Pan to map marker">
+                            <i class="fa-solid fa-crosshairs text-slate-400"></i> ${parseFloat(report.latitude || 0).toFixed(4)}, ${parseFloat(report.longitude || 0).toFixed(4)}
+                        </button>
+                    </td>
+                    <td class="p-4 text-slate-700 text-xs font-medium">${displayDate}<br><span class="text-slate-400 font-normal block mt-0.5">${displayTime}</span></td>
+                    <td class="p-4 text-center">
+                        <a href="${report.imageUrl || '#'}" target="_blank" class="inline-block">
+                            <img class="img-thumbnail w-12 h-12 object-cover rounded-md border border-slate-200" src="${report.imageUrl || 'https://via.placeholder.com/150'}" alt="Evidence"/>
+                        </a>
+                    </td>
+                    <td class="p-4 text-right">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button class="btn-edit-inline text-brand-blue hover:bg-blue-50 p-2 rounded-lg text-sm transition-colors" onclick="openEditModal('${report.id}')" title="Modify Road Hazard Details"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="btn-delete text-red-500 hover:bg-red-50 p-2 rounded-lg text-sm transition-colors" onclick="promptDeleteReport('${report.id}')" title="Permanently Erase Log Entry"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Show elegant custom success notifications banner
+        function showToast(message) {
+            const toast = document.getElementById("toastBanner");
+            document.getElementById("toastMessage").innerText = message;
+            toast.classList.remove("translate-y-[150px]");
+            toast.classList.add("translate-y-0");
+            setTimeout(() => {
+                toast.classList.remove("translate-y-0");
+                toast.classList.add("translate-y-[150px]");
+            }, 3000);
+        }
+
+        // Pans map view and focuses on the selected hazard marker pin
+        window.focusOnMap = function(id) {
+            if (activeMarkers[id] && map) {
+                const target = activeMarkers[id];
+                map.setCenter({ lat: target.lat, lng: target.lng });
+                map.setZoom(16);
+                target.infoWindow.open(map, target.marker);
+                
+                document.getElementById("map").scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // Deep-Dive Modal Details Controller Mappings
+        window.openDetailsModal = function(id) {
+            const report = allReports.find(r => r.id === id);
+            if (!report) return;
+
+            let formattedTime = "---";
+            if (report.submit && typeof report.submit.toDate === 'function') {
+                const jsDate = report.submit.toDate();
+                formattedTime = `${jsDate.toLocaleDateString('en-GB')} ${jsDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+            } else if (report.date) {
+                formattedTime = `${report.date} ${report.time || ''}`;
+            }
+
+            document.getElementById("detailsModalTitle").innerHTML = `<i class="fa-solid fa-circle-info text-brand-sky"></i> Statement Log #${report.id.substring(0,6)}`;
+            document.getElementById("detUser").innerText = report.reportedBy || "Anonymous User";
+            
+            const firstChar = (report.reportedBy || "U").trim().charAt(0).toUpperCase();
+            document.getElementById("detUserInit").innerText = firstChar;
+
+            document.getElementById("detType").innerText = report.hazardType || "Unclassified Incident";
+            document.getElementById("detCoords").innerText = `${parseFloat(report.latitude || 0).toFixed(6)}, ${parseFloat(report.longitude || 0).toFixed(6)}`;
+            document.getElementById("detTimestamp").innerText = formattedTime;
+            document.getElementById("detAgent").innerText = report.userAgent || "No data client string mapped.";
+            document.getElementById("detDesc").innerText = report.description || "No supplemental details summary statement filed.";
+            
+            const imgElement = document.getElementById("detImage");
+            const imgLink = document.getElementById("detImageLink");
+            imgElement.src = report.imageUrl || "https://via.placeholder.com/150";
+            imgLink.href = report.imageUrl || "#";
+
+            const statusSelect = document.getElementById("detStatusSelect");
+            statusSelect.value = report.status;
+
+            document.getElementById("detLocateBtn").onclick = function() {
+                closeDetailsModal();
+                focusOnMap(report.id);
+            };
+
+            document.getElementById("detSaveStatusBtn").onclick = async function() {
+                const newStatus = statusSelect.value;
+                try {
+                    const reportRef = doc(db, "hazards", report.id);
+                    await updateDoc(reportRef, { status: newStatus });
+                    closeDetailsModal();
+                    showToast("Complaint Status saved successfully!");
+                } catch (err) {
+                    console.error("Save state mismatch: ", err);
+                }
+            };
+
+            const modal = document.getElementById("detailsModal");
+            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.add("flex");
+        };
+
+        window.closeDetailsModal = function() {
+            const modal = document.getElementById("detailsModal");
+            modal.classList.add("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.remove("flex");
+        };
+
+        // Custom Confirmation dialogs for Status Updates
+        window.promptStatusChange = function(id, newStatus, currentStatus) {
+            const modal = document.getElementById("confirmationModal");
+            const header = document.getElementById("modalHeader");
+            const body = document.getElementById("modalBody");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+
+            header.innerHTML = `<i class="fa-solid fa-arrows-rotate text-brand-blue"></i> Confirm Status Mutation`;
+            body.innerText = `Are you sure you want to alter this hazard notice status sequence from "${currentStatus}" to "${newStatus}"? This alteration syncs across all client configurations instantly.`;
+            
+            confirmBtn.className = "btn btn-confirm bg-brand-blue hover:bg-brand-hover text-white";
+            confirmBtn.innerText = "Update Status";
+            
+            confirmBtn.onclick = async function() {
+                try {
+                    const reportRef = doc(db, "hazards", id);
+                    await updateDoc(reportRef, { status: newStatus });
+                    closeConfirmationModal();
+                    showToast("Incident status updated successfully!");
+                } catch (err) { console.error(err); }
+            };
+
+            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.add("flex");
+            pendingAction = { type: 'status', id: id, element: event.target, fallback: currentStatus };
+        };
+
+        // Custom Confirmation dialogs for Deletions
+        window.promptDeleteReport = function(id) {
+            const modal = document.getElementById("confirmationModal");
+            const header = document.getElementById("modalHeader");
+            const body = document.getElementById("modalBody");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+
+            header.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Permanent Record Deletion Request`;
+            body.innerText = `Warning: You are attempting to completely purge report reference item #${id.substring(0,6)} from the system storage indexes. This operation is non-reversible.`;
+            
+            confirmBtn.className = "btn btn-danger bg-red-600 hover:bg-red-700 text-white";
+            confirmBtn.innerText = "Permanently Delete";
+            
+            confirmBtn.onclick = async function() {
+                try {
+                    await deleteDoc(doc(db, "hazards", id));
+                    closeConfirmationModal();
+                    showToast("Record successfully deleted from Firestore!");
+                } catch(err) { console.error(err); }
+            };
+
+            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.add("flex");
+            pendingAction = { type: 'delete', id: id };
+        };
+
+        window.closeConfirmationModal = function() {
+            const modal = document.getElementById("confirmationModal");
+            modal.classList.add("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.remove("flex");
+            if (pendingAction && pendingAction.type === 'status') {
+                pendingAction.element.value = pendingAction.fallback;
+            }
+            pendingAction = null;
+        };
+
+        // ADMIN CRUD: EDIT MODAL CONTROLLERS
+        window.openEditModal = function(id) {
+            const report = allReports.find(r => r.id === id);
+            if (!report) return;
+
+            document.getElementById("editReportId").value = report.id;
+            document.getElementById("editTypeInput").value = report.hazardType || "Pothole";
+            document.getElementById("editLatitudeInput").value = report.latitude || 0;
+            document.getElementById("editLongitudeInput").value = report.longitude || 0;
+            document.getElementById("editDescriptionInput").value = report.description || "";
+            document.getElementById("editImageUrlInput").value = report.imageUrl || "";
+
+            const modal = document.getElementById("editHazardModal");
+            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.add("flex");
+        };
+
+        window.closeEditModal = function() {
+            const modal = document.getElementById("editHazardModal");
+            modal.classList.add("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.remove("flex");
+            document.getElementById("editHazardForm").reset();
+        };
+
+        window.updateHazardRecord = async function(event) {
+            event.preventDefault();
+            const id = document.getElementById("editReportId").value;
+            const updatedType = document.getElementById("editTypeInput").value;
+            const updatedLat = parseFloat(document.getElementById("editLatitudeInput").value);
+            const updatedLng = parseFloat(document.getElementById("editLongitudeInput").value);
+            const updatedDesc = document.getElementById("editDescriptionInput").value;
+            const updatedImg = document.getElementById("editImageUrlInput").value;
+
+            try {
+                const reportRef = doc(db, "hazards", id);
+                await updateDoc(reportRef, {
+                    hazardType: updatedType,
+                    latitude: updatedLat,
+                    longitude: updatedLng,
+                    description: updatedDesc,
+                    imageUrl: updatedImg
+                });
+                closeEditModal();
+                showToast("Hazard record updated successfully!");
+            } catch(err) {
+                console.error("Failed to update hazard record: ", err);
+            }
+        };
+
+        // Filtering engine based on search input, type, status, and date fields
+        window.filterReports = function() {
+            let userKeyword = document.getElementById("searchBar").value.toLowerCase();
+            let selectType = document.getElementById("typeFilter").value;
+            let selectStatus = document.getElementById("statusFilter").value;
+            let selectDate = document.getElementById("dateFilter").value; // Format: YYYY-MM-DD
+
+            let filtered = allReports.filter(report => {
+                let normalizeStatus = report.status === "Under Investigation" ? "In Progress" : report.status;
+                let matchesUser = (report.reportedBy || '').toLowerCase().includes(userKeyword);
+                let matchesType = selectType === "" || report.hazardType === selectType;
+                let matchesStatus = selectStatus === "" || normalizeStatus === selectStatus;
+                
+                let matchesDate = true;
+                if (selectDate !== "") {
+                    let formattedDocDate = "";
+                    if (report.submit && typeof report.submit.toDate === 'function') {
+                        const jsDate = report.submit.toDate();
+                        const year = jsDate.getFullYear();
+                        const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(jsDate.getDate()).padStart(2, '0');
+                        formattedDocDate = `${year}-${month}-${day}`;
+                    } else if (report.date) {
+                        const parts = report.date.split('/');
+                        if (parts.length === 3) {
+                            formattedDocDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        }
+                    }
+                    matchesDate = (formattedDocDate === selectDate);
+                }
+
+                return matchesUser && matchesType && matchesStatus && matchesDate;
+            });
+
+            renderTable(filtered);
+            updateMapMarkers(filtered);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRoad | Advanced Admin Center</title>
+    
+    <!-- External Dependencies: Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ========================================== -->
+    <!--          1. CORE STYLING SYSTEM            -->
+    <!-- ========================================== -->
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            
+            /* Status Theme Configurations */
+            --bg-new: #fef2f2; --txt-new: #ef4444;
+            --bg-progress: #fffbeb; --txt-progress: #d97706;
+            --bg-resolved: #ecfdf5; --txt-resolved: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Top Navigation Header bar */
+        header.top-nav-bar {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: #0f172a;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        header.top-nav-bar .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        header.top-nav-bar nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        header.top-nav-bar nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        header.top-nav-bar nav a.active, header.top-nav-bar nav a:hover {
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+
+        /* Layout Workspace Containers */
+        main {
+            flex: 1;
+            padding: 40px;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .workspace-header {
+            margin-bottom: 32px;
+        }
+
+        .workspace-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .workspace-header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Dashboard Overview Metrics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .card-info h3 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+        .card-info p { font-size: 28px; font-weight: 700; }
+        .card-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .card-icon.blue { background: #eff6ff; color: #2563eb; }
+        .card-icon.red { background: #fef2f2; color: #ef4444; }
+        .card-icon.amber { background: #fffbeb; color: #d97706; }
+        .card-icon.emerald { background: #ecfdf5; color: #10b981; }
+
+        .dashboard-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Google Maps Wrapper */
+        .map-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 36px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Filters Shell Bar */
+        .filter-bar {
+            background: var(--surface);
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .search-wrapper { position: relative; flex: 2; min-width: 240px; }
+        .search-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-wrapper input { width: 100%; padding: 10px 16px 10px 40px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+        .filter-dropdown { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--surface); cursor: pointer; outline: none; }
+        .filter-date-picker { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: var(--text-main); background: var(--surface); outline: none; }
+
+        /* Tables & Directories Customizations */
+        .table-container {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 32px;
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f8fafc; padding: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 16px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover { background-color: #f8fafc; }
+
+        .user-name { font-weight: 600; color: var(--text-main); }
+        .agent-info { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+        .report-id-text { font-family: monospace; font-weight: 600; }
+        .report-id-link { color: var(--primary); text-decoration: none; font-weight: 700; }
+        .report-id-link:hover { text-decoration: underline; }
+        
+        .status-select {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none; outline: none;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .status-select.new-state { background-color: var(--bg-new); color: var(--txt-new); }
+        .status-select.progress-state { background-color: var(--bg-progress); color: var(--txt-progress); }
+        .status-select.resolved-state { background-color: var(--bg-resolved); color: var(--txt-resolved); }
+
+        .img-thumbnail { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); transition: transform 0.2s; }
+        .img-thumbnail:hover { transform: scale(1.1); }
+        .btn-delete { background: transparent; border: none; color: #ef4444; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background 0.2s; }
+        .btn-delete:hover { background: #fef2f2; }
+        .btn-edit-inline { background: transparent; border: none; color: var(--primary); padding: 8px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background 0.2s; }
+        .btn-edit-inline:hover { background: #eff6ff; }
+
+        /* Unified Form Grid layouts */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+            margin-bottom: 32px;
+        }
+
+        .form-column { display: flex; flex-direction: column; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-main); }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--background);
+            outline: none;
+            transition: border 0.2s;
+            color: var(--text-main);
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--primary);
+            background-color: var(--surface);
+        }
+
+        .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+
+        /* Unified UX Overlays Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-box {
+            background: var(--surface);
+            padding: 28px;
+            border-radius: 12px;
+            width: 100%; max-width: 440px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+            transform: scale(0.95);
+            transition: transform 0.2s ease-in-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 18px; font-weight: 700; }
+        .modal-body { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; }
+        
+        .btn { padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-secondary { background: #f1f5f9; color: #475569; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-confirm:hover { background: var(--primary-hover); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bd2130; }
+
+        /* Deep-dive details overlays */
+        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+        .details-col-left, .details-col-right { display: flex; flex-direction: column; gap: 12px; }
+        .details-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }
+        .details-value { font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: 8px; }
+        .details-value-strong { font-size: 15px; font-weight: 700; color: #000000; }
+        
+        .details-desc-box {
+            font-size: 13px;
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            min-height: 70px;
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        .details-agent-badge {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            border: 1px solid var(--border);
+        }
+
+        .details-img-frame { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+
+        /* Settings components style helpers */
+        .settings-user-card { display: flex; align-items: center; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+        
+        .settings-avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background-color: var(--primary); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========================================== -->
+    <!--          2. HORIZONTAL NAVIGATION          -->
+    <!-- ========================================== -->
+    <header class="top-nav-bar">
+        <div class="brand">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>SmartRoad Admin</span>
+        </div>
+        <nav>
+            <a href="#" class="nav-tab active" data-tab="tab-dashboard" onclick="switchTab(event, 'tab-dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="#" class="nav-tab" data-tab="tab-add-hazard" onclick="switchTab(event, 'tab-add-hazard')"><i class="fa-solid fa-circle-plus"></i> Add Hazard</a>
+            <a href="#" class="nav-tab" data-tab="tab-members" onclick="switchTab(event, 'tab-members')"><i class="fa-solid fa-users"></i> Registered Members</a>
+            <a href="#" class="nav-tab" data-tab="tab-settings" onclick="switchTab(event, 'tab-settings')"><i class="fa-solid fa-gears"></i> Settings</a>
+        </nav>
+    </header>
+
+    <!-- ========================================== -->
+    <!--             3. CONTENT SECTIONS            -->
+    <!-- ========================================== -->
+    <main>
+        
+        <!-- SECTION 1: DASHBOARD TAB VIEW -->
+        <section id="tab-dashboard" class="tab-content active">
+            <div class="workspace-header">
+                <h1>Control Console Dashboard</h1>
+                <p>Real-Time Road Incident Validation, Spatial Mapping, & Hazard Logs Pipeline</p>
+            </div>
+
+            <!-- Metrics Indicators Row -->
+            <div class="metrics-grid">
+                <div class="card">
+                    <div class="card-info"><h3>Total Incidents</h3><p id="total-count">0</p></div>
+                    <div class="card-icon blue"><i class="fa-solid fa-database"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>New Reports</h3><p id="new-count">0</p></div>
+                    <div class="card-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>In Progress</h3><p id="progress-count">0</p></div>
+                    <div class="card-icon amber"><i class="fa-solid fa-person-digging"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>Resolved</h3><p id="resolved-count">0</p></div>
+                    <div class="card-icon emerald"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+            </div>
+
+            <!-- Spatial Distribution Canvas -->
+            <h2 class="dashboard-section-title"><i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Google Maps Hazard Density Distribution</h2>
+            <div class="map-wrapper">
+                <div id="map"></div>
+            </div>
+
+            <!-- Incident Directory Management Frame -->
+            <h2 class="dashboard-section-title"><i class="fa-solid fa-list-check"></i> Manage Incident Statements</h2>
+            <div class="filter-bar">
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchBar" placeholder="Search by user reporter name..." onkeyup="filterReports()">
+                </div>
+                <select id="typeFilter" class="filter-dropdown" title="Filter by Hazard Type Option" onchange="filterReports()">
+                    <option value="">All Hazard Configurations</option>
+                    <option value="Pothole">Pothole</option>
+                    <option value="Flood">Flood</option>
+                    <option value="Accident">Accident</option>
+                    <option value="Fallen Tree">Fallen Tree</option>
+                    <option value="Damaged Road Sign">Damaged Road Sign</option>
+                    <option value="Broken Traffic Light">Broken Traffic Light</option>
+                </select>
+                <input type="date" id="dateFilter" class="filter-date-picker" title="Filter by Submission Date" onchange="filterReports()">
+                <select id="statusFilter" class="filter-dropdown" title="Filter by Status Option" onchange="filterReports()">
+                    <option value="">All Active Statuses</option>
+                    <option value="New">New</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                </select>
+            </div>
+
+            <!-- Incidents Data List Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Report ID</th>
+                            <th>User Profile</th>
+                            <th>Hazard Specifics</th>
+                            <th>Status Control</th>
+                            <th>Coordinates</th>
+                            <th>Timestamp</th>
+                            <th>Evidence</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 2: ADD ROAD HAZARD VIEW -->
+        <section id="tab-add-hazard" class="tab-content">
+            <div class="workspace-header">
+                <h1>Log New Hazard Record</h1>
+                <p>Manually initialize and submit a road hazard observation report directly to the remote server database</p>
+            </div>
+
+            <form id="addHazardForm" onsubmit="submitNewHazard(event)">
+                <div class="form-grid">
+                    <div class="form-column">
+                        <h3 class="dashboard-section-title"><i class="fa-solid fa-circle-info"></i> Hazard Definition Parameters</h3>
+                        <div class="form-group">
+                            <label for="addReporter">Reporter Real Name</label>
+                            <input type="text" id="addReporter" placeholder="e.g. Ahmad Shah" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addType">Hazard Classification Type</label>
+                            <select id="addType" required>
+                                <option value="Pothole">Pothole</option>
+                                <option value="Flood">Flood</option>
+                                <option value="Accident">Accident</option>
+                                <option value="Fallen Tree">Fallen Tree</option>
+                                <option value="Damaged Road Sign">Damaged Road Sign</option>
+                                <option value="Broken Traffic Light">Broken Traffic Light</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addDescription">Description Summary Statement</label>
+                            <textarea id="addDescription" rows="4" placeholder="Describe the severity, damage, or impact on traffic flow details..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-column">
+                        <h3 class="dashboard-section-title"><i class="fa-solid fa-location-crosshairs"></i> Metadata & Coordinates</h3>
+                        <div class="form-group">
+                            <label for="addLatitude">Latitude Coordinate</label>
+                            <input type="number" step="any" id="addLatitude" placeholder="e.g. 2.3115" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addLongitude">Longitude Coordinate</label>
+                            <input type="number" step="any" id="addLongitude" placeholder="e.g. 102.3218" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addImageUrl">Evidence Image Resource URL</label>
+                            <input type="url" id="addImageUrl" placeholder="https://..." value="https://images.unsplash.com/photo-1515162305285-0293e4767cc2?auto=format&fit=crop&q=80&w=600">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="reset" class="btn btn-secondary">Clear Fields</button>
+                    <button type="submit" class="btn btn-confirm"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Hazard Report</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- SECTION 3: REGISTERED MEMBERS VIEW -->
+        <section id="tab-members" class="tab-content">
+            <div class="workspace-header">
+                <h1>Registered Member Base</h1>
+                <p>Review system accounts, credentials, and crowdsourcing metrics gathered from the mobile application client base</p>
+            </div>
+
+            <h2 class="dashboard-section-title"><i class="fa-solid fa-user-shield"></i> Registered Users Directory</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User UID</th>
+                            <th>Real Name</th>
+                            <th>Account Username</th>
+                            <th>Total Filed Reports</th>
+                            <th>Resolved Hazard Records</th>
+                            <th>Performance Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="members-table-body">
+                        <!-- Populated dynamically via script module -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 4: SYSTEM CONFIG DESK -->
+        <section id="tab-settings" class="tab-content">
+            <div class="workspace-header">
+                <h1>System Configurations Desk</h1>
+                <p>Modify local browser maps initialization criteria, profile preferences, and system diagnostic variables</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-column">
+                    <h3 class="dashboard-section-title"><i class="fa-solid fa-user"></i> Administrator Profile</h3>
+                    <div class="settings-user-card">
+                        <div class="settings-avatar">SR</div>
+                        <div>
+                            <h4 style="font-weight: 700; font-size: 16px;">SmartRoad Admin Core</h4>
+                            <p style="font-size: 13px; color: var(--text-muted);">admin@smartroad.net</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="adminNameInput">DisplayName Handle</label>
+                        <input type="text" id="adminNameInput" value="SmartRoad System Admin">
+                    </div>
+                    <div class="form-group">
+                        <label for="adminEmailInput">Contact Notifications Email</label>
+                        <input type="email" id="adminEmailInput" value="notifications@smartroad.net">
+                    </div>
+                </div>
+
+                <div class="form-column">
+                    <h3 class="dashboard-section-title"><i class="fa-solid fa-sliders"></i> Map Spatial Initialization Defaults</h3>
+                    <div class="form-group">
+                        <label for="setMapCenterLat">Default Start Latitude</label>
+                        <input type="number" step="any" id="setMapCenterLat" value="4.2105">
+                    </div>
+                    <div class="form-group">
+                        <label for="setMapCenterLng">Default Start Longitude</label>
+                        <input type="number" step="any" id="setMapCenterLng" value="101.9758">
+                    </div>
+                    <div class="form-group">
+                        <label for="setMapZoom">Default Map Zoom Factor</label>
+                        <select id="setMapZoom">
+                            <option value="5">5 - Continental Outline</option>
+                            <option value="6" selected>6 - Default Malaysia View</option>
+                            <option value="8">8 - Regional Outlook</option>
+                            <option value="11">11 - Sub-City Resolution</option>
+                            <option value="15">15 - Street Grid Resolution</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-confirm" onclick="applySystemSettings()"><i class="fa-solid fa-floppy-disk"></i> Apply System Settings</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!--            4. SYSTEM UI OVERLAYS           -->
+    <!-- ========================================== -->
+    
+    <!-- UX Confirmation Modal Overlay -->
+    <div id="confirmationModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalHeader" class="modal-header"></div>
+            <div id="modalBody" class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeConfirmationModal()">Cancel</button>
+                <button id="modalConfirmBtn" class="btn">Confirm Action</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deep-dive Report Details Overlay Modal -->
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px; width: 95%;">
+            <div class="modal-header" style="justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <span id="detailsModalTitle" style="color: var(--primary); font-weight: 700;"><i class="fa-solid fa-circle-info"></i> Report Details</span>
+                <button onclick="closeDetailsModal()" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="details-grid">
+                <div class="details-col-left">
+                    <div>
+                        <span class="details-label">Reporter Username</span>
+                        <div id="detUser" class="details-value-strong">---</div>
+                    </div>
+                    
+                    <div>
+                        <span class="details-label">Hazard Context Type</span>
+                        <div id="detType" class="details-value">---</div>
+                    </div>
+                    
+                    <div>
+                        <span class="details-label">Incident Location Coordinates</span>
+                        <div id="detCoords" class="details-value" style="font-family: monospace;">---</div>
+                    </div>
+                    
+                    <div>
+                        <span class="details-label">Submission Timestamp</span>
+                        <div id="detTimestamp" class="details-value">---</div>
+                    </div>
+
+                    <div>
+                        <span class="details-label">Device User-Agent Log</span>
+                        <div id="detAgent" class="details-agent-badge">---</div>
+                    </div>
+                </div>
+                
+                <div class="details-col-right">
+                    <div>
+                        <span class="details-label">Evidence Photo Attachment</span>
+                        <a id="detImageLink" href="#" target="_blank">
+                            <img id="detImage" src="https://via.placeholder.com/150" alt="Evidence" class="details-img-frame" />
+                        </a>
+                    </div>
+                    
+                    <div>
+                        <span class="details-label">Description Summary Statement</span>
+                        <div id="detDesc" class="details-desc-box">---</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeDetailsModal()">Close Detail View</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Hazard Modal Overlay (Full Admin CRUD Editing Suite) -->
+    <div id="editHazardModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 550px; width: 95%;">
+            <div class="modal-header" style="justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <span style="color: var(--primary); font-weight: 700;"><i class="fa-solid fa-pen-to-square"></i> Edit Hazard Record</span>
+                <button onclick="closeEditModal()" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="editHazardForm" onsubmit="updateHazardRecord(event)" style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                <input type="hidden" id="editReportId">
+                <div class="form-group">
+                    <label for="editTypeInput">Hazard Classification Type</label>
+                    <select id="editTypeInput" required>
+                        <option value="Pothole">Pothole</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Accident">Accident</option>
+                        <option value="Fallen Tree">Fallen Tree</option>
+                        <option value="Damaged Road Sign">Damaged Road Sign</option>
+                        <option value="Broken Traffic Light">Broken Traffic Light</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editLatitudeInput">Latitude Coordinate</label>
+                    <input type="number" step="any" id="editLatitudeInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="editLongitudeInput">Longitude Coordinate</label>
+                    <input type="number" step="any" id="editLongitudeInput" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDescriptionInput">Description Summary Statement</label>
+                    <textarea id="editDescriptionInput" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editImageUrlInput">Evidence Image Resource URL</label>
+                    <input type="url" id="editImageUrlInput" required>
+                </div>
+                
+                <div class="modal-footer" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 12px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-confirm">Save Modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Google Maps API JavaScript SDK Core Initialization -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYCW0NkFXTP2cK-EKpoeVcMrJZuM9MIms&callback=initMap" async defer></script>
+
+    <!-- ========================================== -->
+    <!--          5. FIRESTORE LOGIC STREAM         -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Firebase Web Config Array
+        const firebaseConfig = {
+          apiKey: "AIzaSyBk8kuzTObIibyXjP2vSOdnttz9hy0zh7A",
+          authDomain: "fir-mapapp-6d8d9.firebaseapp.com",
+          databaseURL: "https://fir-mapapp-6d8d9-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "fir-mapapp-6d8d9",
+          storageBucket: "fir-mapapp-6d8d9.firebasestorage.app",
+          messagingSenderId: "508858384144",
+          appId: "1:508858384144:web:d6c562be2ed98fe5c0ef95",
+          measurementId: "G-ZV2Q428QD5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let allReports = [];
+        let allUsers = [];
+        let map, activeMarkers = [];
+        let pendingAction = null;
+
+        // Initialize Google Maps Component Engine Workspace
+        window.initMap = function() {
+            const latVal = parseFloat(document.getElementById('setMapCenterLat').value) || 4.2105;
+            const lngVal = parseFloat(document.getElementById('setMapCenterLng').value) || 101.9758;
+            const zoomVal = parseInt(document.getElementById('setMapZoom').value) || 6;
+            
+            const startingCenter = { lat: latVal, lng: lngVal };
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: zoomVal,
+                center: startingCenter,
+                mapId: "DEMO_MAP_ID",
+            });
+            
+            if (allReports.length > 0) {
+                updateMapMarkers(allReports);
+            }
+        };
+
+        // Smooth navigation tab swap routing logic
+        window.switchTab = function(e, tabId) {
+            if (e) e.preventDefault();
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const clickedTab = document.querySelector(`[data-tab="${tabId}"]`);
+            if (clickedTab) clickedTab.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(section => {
+                section.classList.remove('active');
+            });
+            const activeSection = document.getElementById(tabId);
+            if (activeSection) activeSection.classList.add('active');
+
+            if (tabId === 'tab-dashboard' && map) {
+                setTimeout(() => {
+                    google.maps.event.trigger(map, "resize");
+                    if (allReports.length > 0) {
+                        updateMapMarkers(allReports);
+                    }
+                }, 100);
+            }
+        };
+
+        // Plot dynamic markers across the map framework layout matching report properties
+        function updateMapMarkers(dataList) {
+            activeMarkers.forEach(marker => marker.setMap(null));
+            activeMarkers = [];
+
+            if (dataList.length === 0 || !map) return;
+
+            const bounds = new google.maps.LatLngBounds();
+            let validPointsCount = 0;
+
+            dataList.forEach(report => {
+                if (report.latitude && report.longitude) {
+                    const lat = parseFloat(report.latitude);
+                    const lng = parseFloat(report.longitude);
+                    let colorCode = report.status === 'New' ? '#ef4444' : (report.status === 'In Progress' ? '#f59e0b' : '#10b981');
+
+                    const marker = new google.maps.Marker({
+                        position: { lat: lat, lng: lng },
+                        map: map,
+                        title: report.hazardType,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            fillColor: colorCode,
+                            fillOpacity: 0.9,
+                            scale: 8,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2,
+                        }
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="font-family:'Inter',sans-serif; padding:4px;">
+                                <strong style="font-size:13px;color:#0f172a;">${report.hazardType}</strong><br>
+                                <span style="font-size:11px;color:#64748b;">By: ${report.reportedBy || 'User'}</span><br>
+                                <span style="display:inline-block;margin-top:4px;padding:2px 6px;font-size:10px;font-weight:700;border-radius:10px;background:${colorCode}20;color:${colorCode};">${report.status}</span>
+                            </div>
+                        `
+                    });
+
+                    marker.addListener("click", () => {
+                        infoWindow.open(map, marker);
+                    });
+
+                    activeMarkers.push(marker);
+                    bounds.extend(marker.getPosition());
+                    validPointsCount++;
+                }
+            });
+
+            if (validPointsCount > 0) {
+                map.fitBounds(bounds);
+            }
+        }
+
+        // Active Firestore Stream Framework Engine for Hazards
+        onSnapshot(collection(db, "hazards"), (snapshot) => {
+            allReports = [];
+            let total = 0, countNew = 0, countProgress = 0, countDone = 0;
+
+            snapshot.forEach((doc) => {
+                let data = doc.data();
+                data.id = doc.id;
+                allReports.push(data);
+
+                total++;
+                if (data.status === "New") countNew++;
+                else if (data.status === "In Progress" || data.status === "Under Investigation") countProgress++;
+                else if (data.status === "Resolved") countDone++;
+            });
+
+            document.getElementById('total-count').innerText = total;
+            document.getElementById('new-count').innerText = countNew;
+            document.getElementById('progress-count').innerText = countProgress;
+            document.getElementById('resolved-count').innerText = countDone;
+
+            window.filterReports(); 
+        });
+
+        // Active Firestore Stream Framework Engine for Members
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            allUsers = [];
+            snapshot.forEach((doc) => {
+                let data = doc.data();
+                data.uid = doc.id;
+                allUsers.push(data);
+            });
+            renderMembersTable(allUsers);
+        }, (error) => {
+            console.warn("Real-time users collection not configured yet, applying mock members list fallback: ", error);
+            applyMockUsersFallback();
+        });
+
+        // Display User List with active grading metrics fallback
+        function renderMembersTable(usersList) {
+            const tbody = document.getElementById("members-table-body");
+            tbody.innerHTML = "";
+
+            if (usersList.length === 0) {
+                applyMockUsersFallback();
+                return;
+            }
+
+            usersList.forEach(user => {
+                const total = parseInt(user.totalReports || 0);
+                const resolved = parseInt(user.reportsResolved || 0);
+                let grade = "Bronze Reporter";
+                if (total >= 15) grade = "Gold Custodian";
+                else if (total >= 8) grade = "Silver Guardian";
+
+                let row = `<tr>
+                    <td><span class="report-id-text">${user.uid.substring(0,8)}...</span></td>
+                    <td><strong>${user.realName || 'User Guest'}</strong></td>
+                    <td>@${user.username || 'unknown'}</td>
+                    <td>${total}</td>
+                    <td>${resolved}</td>
+                    <td><span style="font-weight:700; color: var(--primary);">${grade}</span></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function applyMockUsersFallback() {
+            const mockUsers = [
+                { uid: "usr_9281a8b", realName: "Idayati Mazlan", username: "idayati", totalReports: 15, reportsResolved: 12 },
+                { uid: "usr_8231c3a", realName: "Ahmad Shah", username: "ahmad_shah", totalReports: 9, reportsResolved: 7 },
+                { uid: "usr_4812b9d", realName: "Muhammad Ammar Syaathir", username: "ammar_syaathir", totalReports: 18, reportsResolved: 15 }
+            ];
+            renderMembersTable(mockUsers);
+        }
+
+        function renderTable(dataList) {
+            const tbody = document.getElementById("table-body");
+            tbody.innerHTML = "";
+
+            if (dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:40px;">No operational hazard notifications matched target filter parameters.</td></tr>`;
+                return;
+            }
+
+            dataList.forEach(report => {
+                let currentStatus = report.status;
+                if (currentStatus === "Under Investigation") currentStatus = "In Progress"; 
+
+                let themeClass = "new-state";
+                if (currentStatus === "In Progress") themeClass = "progress-state";
+                if (currentStatus === "Resolved") themeClass = "resolved-state";
+
+                let displayDate = "---", displayTime = "";
+                if (report.submit && typeof report.submit.toDate === 'function') {
+                    const jsDate = report.submit.toDate(); 
+                    displayDate = jsDate.toLocaleDateString('en-GB'); 
+                    displayTime = jsDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                } else if (report.date) {
+                    displayDate = report.date;
+                    displayTime = report.time || "";
+                }
+
+                let row = `<tr>
+                    <td>
+                        <a href="#" class="report-id-link" onclick="openDetailsModal('${report.id}'); event.preventDefault();">
+                            #${report.id.substring(0,6)}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="user-name">${report.reportedBy || 'Anonymous'}</span>
+                        <span class="agent-info">${report.userAgent || 'App Platform Client'}</span>
+                    </td>
+                    <td><strong>${report.hazardType}</strong><br><span style="font-size:12px;color:var(--text-muted);">${report.description || 'No description summary.'}</span></td>
+                    <td>
+                        <select title="Change Status Option" class="status-select ${themeClass}" onchange="promptStatusChange('${report.id}', this.value, '${currentStatus}')">
+                            <option value="New" ${currentStatus==='New'?'selected':''}>New</option>
+                            <option value="In Progress" ${currentStatus==='In Progress'?'selected':''}>In Progress</option>
+                            <option value="Resolved" ${currentStatus==='Resolved'?'selected':''}>Resolved</option>
+                        </select>
+                    </td>
+                    <td><i class="fa-solid fa-crosshairs" style="color:var(--text-muted);"></i> ${parseFloat(report.latitude || 0).toFixed(4)}, ${parseFloat(report.longitude || 0).toFixed(4)}</td>
+                    <td>${displayDate}<br><span style="font-size:12px;color:var(--text-muted);">${displayTime}</span></td>
+                    <td><a href="${report.imageUrl || '#'}" target="_blank"><img class="img-thumbnail" src="${report.imageUrl || 'https://via.placeholder.com/150'}" alt="Evidence"/></a></td>
+                    <td>
+                        <button class="btn-edit-inline" onclick="openEditModal('${report.id}')" title="Modify Road Hazard Details"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="btn-delete" onclick="promptDeleteReport('${report.id}')" title="Permanently Erase Log Entry"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Deep-Dive Details Overlay Controller Mappings
+        window.openDetailsModal = function(id) {
+            const report = allReports.find(r => r.id === id);
+            if (!report) return;
+
+            let formattedTime = "---";
+            if (report.submit && typeof report.submit.toDate === 'function') {
+                const jsDate = report.submit.toDate();
+                formattedTime = `${jsDate.toLocaleDateString('en-GB')} ${jsDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+            } else if (report.date) {
+                formattedTime = `${report.date} ${report.time || ''}`;
+            }
+
+            document.getElementById("detailsModalTitle").innerHTML = `<i class="fa-solid fa-circle-info"></i> Detailed Overview: Incident Log #${report.id.substring(0,6)}`;
+            document.getElementById("detUser").innerText = report.reportedBy || "Anonymous User";
+            document.getElementById("detType").innerText = report.hazardType || "Unclassified Incident";
+            document.getElementById("detCoords").innerText = `${parseFloat(report.latitude || 0).toFixed(6)}, ${parseFloat(report.longitude || 0).toFixed(6)}`;
+            document.getElementById("detTimestamp").innerText = formattedTime;
+            document.getElementById("detAgent").innerText = report.userAgent || "No data client string mapped.";
+            document.getElementById("detDesc").innerText = report.description || "No supplemental details summary statement filed.";
+            
+            const imgElement = document.getElementById("detImage");
+            const imgLink = document.getElementById("detImageLink");
+            imgElement.src = report.imageUrl || "https://via.placeholder.com/150";
+            imgLink.href = report.imageUrl || "#";
+
+            document.getElementById("detailsModal").classList.add("active");
+        };
+
+        window.closeDetailsModal = function() {
+            document.getElementById("detailsModal").classList.remove("active");
+        };
+
+        // Custom UI Modal Confirmation Interceptor for Status Updates 
+        window.promptStatusChange = function(id, newStatus, currentStatus) {
+            const modal = document.getElementById("confirmationModal");
+            const header = document.getElementById("modalHeader");
+            const body = document.getElementById("modalBody");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+
+            header.innerHTML = `<i class="fa-solid fa-arrows-rotate" style="color: var(--primary);"></i> Confirm Status Mutation`;
+            body.innerText = `Are you sure you want to alter this hazard notice status sequence from "${currentStatus}" to "${newStatus}"? This alteration syncs across all client configurations instantly.`;
+            
+            confirmBtn.className = "btn btn-confirm";
+            confirmBtn.innerText = "Update Status";
+            
+            confirmBtn.onclick = async function() {
+                try {
+                    const reportRef = doc(db, "hazards", id);
+                    await updateDoc(reportRef, { status: newStatus });
+                    closeConfirmationModal();
+                } catch (err) { console.error(err); }
+            };
+
+            modal.classList.add("active");
+            pendingAction = { type: 'status', id: id, element: event.target, fallback: currentStatus };
+        };
+
+        // Custom UI Modal Confirmation Interceptor for Deletions 
+        window.promptDeleteReport = function(id) {
+            const modal = document.getElementById("confirmationModal");
+            const header = document.getElementById("modalHeader");
+            const body = document.getElementById("modalBody");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+
+            header.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #dc3545;"></i> Permanent Record Deletion Request`;
+            body.innerText = `Warning: You are attempting to completely purge report reference item #${id.substring(0,6)} from the system storage indexes. This operation is non-reversible.`;
+            
+            confirmBtn.className = "btn btn-danger";
+            confirmBtn.innerText = "Permanently Delete";
+            
+            confirmBtn.onclick = async function() {
+                try {
+                    await deleteDoc(doc(db, "hazards", id));
+                    closeConfirmationModal();
+                } catch(err) { console.error(err); }
+            };
+
+            modal.classList.add("active");
+            pendingAction = { type: 'delete', id: id };
+        };
+
+        window.closeConfirmationModal = function() {
+            document.getElementById("confirmationModal").classList.remove("active");
+            if (pendingAction && pendingAction.type === 'status') {
+                pendingAction.element.value = pendingAction.fallback;
+            }
+            pendingAction = null;
+        };
+
+        // ADMIN CRUD: CREATE Manual Entry
+        window.submitNewHazard = async function(event) {
+            event.preventDefault();
+            
+            const reporter = document.getElementById("addReporter").value;
+            const type = document.getElementById("addType").value;
+            const description = document.getElementById("addDescription").value;
+            const latitude = parseFloat(document.getElementById("addLatitude").value);
+            const longitude = parseFloat(document.getElementById("addLongitude").value);
+            const imageUrl = document.getElementById("addImageUrl").value;
+            const now = new Date();
+
+            try {
+                await addDoc(collection(db, "hazards"), {
+                    reportedBy: reporter,
+                    hazardType: type,
+                    description: description,
+                    latitude: latitude,
+                    longitude: longitude,
+                    imageUrl: imageUrl,
+                    status: "New",
+                    userAgent: "SmartRoad Web Portal (Admin Dashboard Panel)",
+                    submit: Timestamp.fromDate(now),
+                    date: now.toLocaleDateString('en-GB'),
+                    time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                });
+
+                document.getElementById("addHazardForm").reset();
+                alert("Road hazard manual record submitted successfully!");
+                switchTab(null, 'tab-dashboard');
+            } catch (err) {
+                console.error("Submission failed: ", err);
+                alert("Failed to submit record. See browser console details.");
+            }
+        };
+
+        // ADMIN CRUD: EDIT MODAL CONTROLLERS (Full Update)
+        window.openEditModal = function(id) {
+            const report = allReports.find(r => r.id === id);
+            if (!report) return;
+
+            document.getElementById("editReportId").value = report.id;
+            document.getElementById("editTypeInput").value = report.hazardType || "Pothole";
+            document.getElementById("editLatitudeInput").value = report.latitude || 0;
+            document.getElementById("editLongitudeInput").value = report.longitude || 0;
+            document.getElementById("editDescriptionInput").value = report.description || "";
+            document.getElementById("editImageUrlInput").value = report.imageUrl || "";
+
+            document.getElementById("editHazardModal").classList.add("active");
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById("editHazardModal").classList.remove("active");
+            document.getElementById("editHazardForm").reset();
+        };
+
+        window.updateHazardRecord = async function(event) {
+            event.preventDefault();
+            const id = document.getElementById("editReportId").value;
+            const updatedType = document.getElementById("editTypeInput").value;
+            const updatedLat = parseFloat(document.getElementById("editLatitudeInput").value);
+            const updatedLng = parseFloat(document.getElementById("editLongitudeInput").value);
+            const updatedDesc = document.getElementById("editDescriptionInput").value;
+            const updatedImg = document.getElementById("editImageUrlInput").value;
+
+            try {
+                const reportRef = doc(db, "hazards", id);
+                await updateDoc(reportRef, {
+                    hazardType: updatedType,
+                    latitude: updatedLat,
+                    longitude: updatedLng,
+                    description: updatedDesc,
+                    imageUrl: updatedImg
+                });
+                closeEditModal();
+                alert("Hazard Record modified successfully!");
+            } catch(err) {
+                console.error("Failed to update hazard record: ", err);
+                alert("Modification failed. See console log diagnostics.");
+            }
+        };
+
+        // Apply spatial defaults locally
+        window.applySystemSettings = function() {
+            const lat = parseFloat(document.getElementById("setMapCenterLat").value);
+            const lng = parseFloat(document.getElementById("setMapCenterLng").value);
+            const zoom = parseInt(document.getElementById("setMapZoom").value);
+
+            if (map) {
+                map.setCenter({ lat: lat, lng: lng });
+                map.setZoom(zoom);
+                alert("Map default center parameter applied successfully!");
+            }
+        };
+
+        // Unified multi-parametric search & filter pipeline
+        window.filterReports = function() {
+            let userKeyword = document.getElementById("searchBar").value.toLowerCase();
+            let selectType = document.getElementById("typeFilter").value;
+            let selectStatus = document.getElementById("statusFilter").value;
+            let selectDate = document.getElementById("dateFilter").value; // Format: YYYY-MM-DD
+
+            let filtered = allReports.filter(report => {
+                let normalizeStatus = report.status === "Under Investigation" ? "In Progress" : report.status;
+                let matchesUser = (report.reportedBy || '').toLowerCase().includes(userKeyword);
+                let matchesType = selectType === "" || report.hazardType === selectType;
+                let matchesStatus = selectStatus === "" || normalizeStatus === selectStatus;
+                
+                let matchesDate = true;
+                if (selectDate !== "") {
+                    let formattedDocDate = "";
+                    if (report.submit && typeof report.submit.toDate === 'function') {
+                        const jsDate = report.submit.toDate();
+                        const year = jsDate.getFullYear();
+                        const month = String(jsDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(jsDate.getDate()).padStart(2, '0');
+                        formattedDocDate = `${year}-${month}-${day}`;
+                    } else if (report.date) {
+                        const parts = report.date.split('/');
+                        if (parts.length === 3) {
+                            formattedDocDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                        }
+                    }
+                    matchesDate = (formattedDocDate === selectDate);
+                }
+
+                return matchesUser && matchesType && matchesStatus && matchesDate;
+            });
+
+            renderTable(filtered);
+            updateMapMarkers(filtered);
+        };
+    </script>
+</body>
+</html>

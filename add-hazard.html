@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRoad | Log New Hazard</title>
+    
+    <!-- External Dependencies: Tailwind CSS, Google Fonts, & FontAwesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            slate: '#0f172a',
+                            sky: '#38bdf8',
+                            blue: '#2563eb',
+                            hover: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- Reusable Top Navigation Bar -->
+    <header class="sticky top-0 w-full h-[70px] bg-brand-slate text-white flex items-center justify-between px-6 md:px-10 z-50 shadow-md">
+        <div class="brand flex items-center gap-3 text-xl md:text-22px font-bold text-brand-sky">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>SmartRoad Admin</span>
+        </div>
+        <nav class="flex gap-2">
+            <a href="index.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-chart-line"></i> <span class="hidden sm:inline">Dashboard</span></a>
+            <a href="add-hazard.html" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-plus"></i> <span class="hidden sm:inline">Add Hazard</span></a>
+            <a href="members.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-users"></i> <span class="hidden sm:inline">Members</span></a>
+            <a href="settings.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-gears"></i> <span class="hidden sm:inline">Settings</span></a>
+            <a href="about.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-info"></i> <span class="hidden sm:inline">About</span></a>
+        </nav>
+    </header>
+
+    <main class="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto">
+        <div class="workspace-header mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Log New Hazard Record</h1>
+            <p class="text-slate-500 text-sm mt-1">Manually initialize, detect locations, and submit a road hazard observation report directly to the remote server database.</p>
+        </div>
+
+        <!-- Add Hazard Form (Admin CRUD Create) -->
+        <form id="addHazardForm" onsubmit="submitNewHazard(event)">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white p-6 md:p-10 rounded-xl border border-slate-200 shadow-sm mb-8">
+                
+                <div class="flex flex-col gap-6">
+                    <h3 class="text-lg font-bold border-b border-slate-100 pb-3 flex items-center gap-2 text-slate-800"><i class="fa-solid fa-circle-info text-brand-blue"></i> Hazard Definition Parameters</h3>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label for="addReporter" class="text-xs font-semibold text-slate-700">Reporter Real Name</label>
+                        <input type="text" id="addReporter" placeholder="e.g. Ahmad Shah" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label for="addType" class="text-xs font-semibold text-slate-700">Hazard Classification Type</label>
+                        <select id="addType" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                            <option value="Pothole">Pothole</option>
+                            <option value="Flood">Flood</option>
+                            <option value="Accident">Accident</option>
+                            <option value="Fallen Tree">Fallen Tree</option>
+                            <option value="Damaged Road Sign">Damaged Road Sign</option>
+                            <option value="Broken Traffic Light">Broken Traffic Light</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label for="addDescription" class="text-xs font-semibold text-slate-700">Description Summary Statement</label>
+                        <textarea id="addDescription" rows="4" placeholder="Describe the severity, damage, or impact on traffic flow details..." required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors leading-relaxed"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-6">
+                    <h3 class="text-lg font-bold border-b border-slate-100 pb-3 flex items-center gap-2 text-slate-800"><i class="fa-solid fa-location-crosshairs text-brand-blue"></i> Metadata & Coordinates</h3>
+                    
+                    <!-- Geolocation Permission-based Autofill Trigger -->
+                    <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl text-brand-blue"><i class="fa-solid fa-compass" id="compassIcon"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-800">Auto-Detect Coordinates</h4>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Let your browser safely capture your live GPS coordinates.</p>
+                            </div>
+                        </div>
+                        <button type="button" id="detectLocBtn" onclick="detectLocation()" class="bg-brand-blue hover:bg-brand-hover text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all whitespace-nowrap"><i class="fa-solid fa-location-arrow mr-1"></i> <span id="detectLocText">Get GPS Location</span></button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <label for="addLatitude" class="text-xs font-semibold text-slate-700">Latitude Coordinate</label>
+                            <input type="number" step="any" id="addLatitude" placeholder="e.g. 2.3115" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="addLongitude" class="text-xs font-semibold text-slate-700">Longitude Coordinate</label>
+                            <input type="number" step="any" id="addLongitude" placeholder="e.g. 102.3218" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Simulated Geocode Result Box -->
+                    <div id="geocodeBox" class="hidden transition-all duration-300">
+                        <div class="flex flex-col gap-1 bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Detected Locale Area</span>
+                            <div class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-red-500"></i> <span id="geocodeValue">Merlimau, Malacca, Malaysia</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Local Device Photo Uploader -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-semibold text-slate-700">Evidence Photo Attachment</label>
+                        <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-brand-blue rounded-xl p-6 text-center cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-all flex flex-col items-center justify-center gap-2 relative min-h-[160px]">
+                            <input type="file" id="imageUpload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required onchange="handleImageFile(this.files)">
+                            
+                            <div id="uploadPlaceholder" class="flex flex-col items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
+                                <p class="text-xs font-semibold text-slate-600">Drag and drop your image here, or click to browse</p>
+                                <p class="text-[10px] text-slate-400">Supports JPG, PNG, GIF (Max size: 10MB)</p>
+                            </div>
+                            
+                            <div id="uploadPreview" class="hidden w-full flex flex-col items-center gap-3">
+                                <img id="previewImage" src="#" alt="Preview" class="max-h-36 rounded-lg object-cover border border-slate-200 shadow-sm">
+                                <button type="button" onclick="removeSelectedImage(event)" class="text-xs text-red-500 font-semibold hover:underline flex items-center gap-1.5"><i class="fa-solid fa-trash"></i> Remove Photo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mb-12">
+                <button type="reset" onclick="resetFormState()" class="px-6 py-3 rounded-lg text-sm font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors">Clear Fields</button>
+                <button type="submit" id="submitBtn" class="px-6 py-3 rounded-lg text-sm font-semibold text-white bg-brand-blue hover:bg-brand-hover shadow-sm flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-cloud-arrow-up" id="submitIcon"></i> <span id="submitText">Upload Hazard Report</span>
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBk8kuzTObIibyXjP2vSOdnttz9hy0zh7A",
+          authDomain: "fir-mapapp-6d8d9.firebaseapp.com",
+          databaseURL: "https://fir-mapapp-6d8d9-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "fir-mapapp-6d8d9",
+          storageBucket: "fir-mapapp-6d8d9.firebasestorage.app",
+          messagingSenderId: "508858384144",
+          appId: "1:508858384144:web:d6c562be2ed98fe5c0ef95",
+          measurementId: "G-ZV2Q428QD5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // State holder for base64 compressed data url
+        window.uploadedImageBase64 = "";
+
+        // Drag & Drop visual state helpers
+        const dropZone = document.getElementById("dropZone");
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-brand-blue', 'bg-blue-50/50');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-brand-blue', 'bg-blue-50/50');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                document.getElementById("imageUpload").files = files;
+                window.handleImageFile(files);
+            }
+        }, false);
+
+        // Processes, resizes, and compresses selected device image
+        window.handleImageFile = function(files) {
+            if (!files || files.length === 0) return;
+            const file = files[0];
+
+            // Show accessing spinner inside dropzone
+            const placeholder = document.getElementById("uploadPlaceholder");
+            placeholder.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-blue"></i><p class="text-xs font-semibold text-slate-600">Compressing Image for Cloud Upload...</p>`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDimension = 800; // Optimal scaling boundary to fit within Firestore limit
+
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // High efficiency compressed Base64 data string (JPEG format at 70% quality factor)
+                    const base64String = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    window.uploadedImageBase64 = base64String;
+
+                    // Display Preview Panel
+                    document.getElementById("previewImage").src = base64String;
+                    placeholder.classList.add("hidden");
+                    document.getElementById("uploadPreview").classList.remove("hidden");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.removeSelectedImage = function(e) {
+            if (e) e.preventDefault();
+            window.resetImageUploader();
+        };
+
+        window.resetImageUploader = function() {
+            window.uploadedImageBase64 = "";
+            document.getElementById("imageUpload").value = "";
+            document.getElementById("uploadPreview").classList.add("hidden");
+            
+            const placeholder = document.getElementById("uploadPlaceholder");
+            placeholder.innerHTML = `
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
+                <p class="text-xs font-semibold text-slate-600">Drag and drop your image here, or click to browse</p>
+                <p class="text-[10px] text-slate-400">Supports JPG, PNG, GIF (Max size: 10MB)</p>
+            `;
+            placeholder.classList.remove("hidden");
+        };
+
+        window.resetFormState = function() {
+            window.resetImageUploader();
+            document.getElementById("geocodeBox").classList.add("hidden");
+            const compass = document.getElementById("compassIcon");
+            compass.className = "fa-solid fa-compass";
+        };
+
+        // Permission-based Geolocation Capture API
+        window.detectLocation = function() {
+            const btn = document.getElementById("detectLocBtn");
+            const btnText = document.getElementById("detectLocText");
+            const geocodeBox = document.getElementById("geocodeBox");
+            const geocodeValue = document.getElementById("geocodeValue");
+            const compass = document.getElementById("compassIcon");
+
+            if (navigator.geolocation) {
+                btnText.innerText = "Accessing GPS...";
+                btn.classList.add("animate-pulse");
+                compass.className = "fa-solid fa-compass fa-spin text-brand-blue";
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById("addLatitude").value = position.coords.latitude.toFixed(6);
+                        document.getElementById("addLongitude").value = position.coords.longitude.toFixed(6);
+                        btnText.innerText = "Coordinates Set!";
+                        btn.classList.remove("animate-pulse");
+                        compass.className = "fa-solid fa-circle-check text-emerald-500";
+
+                        // Auto geocoding simulator UI to match Malacca coordinates context
+                        geocodeValue.innerText = "Merlimau, Malacca, Malaysia (Auto Detected)";
+                        geocodeBox.classList.remove("hidden");
+
+                        setTimeout(() => {
+                            btnText.innerText = "Get GPS Location";
+                        }, 3000);
+                    },
+                    (error) => {
+                        console.error("GPS access blocked: ", error);
+                        btn.classList.remove("animate-pulse");
+                        compass.className = "fa-solid fa-circle-xmark text-red-500";
+                        btnText.innerText = "Access Denied";
+                        alert("Permission denied. Ensure your browser is allowed to access your device location.");
+                        setTimeout(() => {
+                            btnText.innerText = "Get GPS Location";
+                            compass.className = "fa-solid fa-compass";
+                        }, 3000);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        };
+
+        // Firestore submission callback
+        window.submitNewHazard = async function(event) {
+            event.preventDefault();
+
+            if (!window.uploadedImageBase64) {
+                alert("Please select and upload an evidence photo from your device.");
+                return;
+            }
+
+            const btn = document.getElementById("submitBtn");
+            const icon = document.getElementById("submitIcon");
+            const text = document.getElementById("submitText");
+
+            // UI feedback processing transition
+            btn.disabled = true;
+            btn.classList.add("opacity-70", "cursor-not-allowed");
+            icon.className = "fa-solid fa-circle-notch fa-spin";
+            text.innerText = "Uploading to Firestore...";
+            
+            const reporter = document.getElementById("addReporter").value;
+            const type = document.getElementById("addType").value;
+            const description = document.getElementById("addDescription").value;
+            const latitude = parseFloat(document.getElementById("addLatitude").value);
+            const longitude = parseFloat(document.getElementById("addLongitude").value);
+            const now = new Date();
+
+            try {
+                await addDoc(collection(db, "hazards"), {
+                    reportedBy: reporter,
+                    hazardType: type,
+                    description: description,
+                    latitude: latitude,
+                    longitude: longitude,
+                    imageUrl: window.uploadedImageBase64,
+                    status: "New",
+                    userAgent: "SmartRoad Web Portal (Admin Panel Manual Add)",
+                    submit: Timestamp.fromDate(now),
+                    date: now.toLocaleDateString('en-GB'),
+                    time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                });
+
+                // Redirect smoothly back to home Dashboard tab upon successful submission
+                window.location.href = "index.html";
+            } catch (err) {
+                console.error("Submission failed: ", err);
+                alert("Firestore transaction failed. Check database security rules.");
+                btn.disabled = false;
+                btn.classList.remove("opacity-70", "cursor-not-allowed");
+                icon.className = "fa-solid fa-cloud-arrow-up";
+                text.innerText = "Upload Hazard Report";
+            }
+        };
+    </script>
+</body>
+</html>

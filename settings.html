@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartRoad | Settings & Maintenance Desk</title>
+    
+    <!-- External Dependencies: Tailwind CSS, Google Fonts, & FontAwesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            slate: '#0f172a',
+                            sky: '#38bdf8',
+                            blue: '#2563eb',
+                            hover: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar for dynamic panels */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+
+    <!-- Reusable Top Navigation Bar -->
+    <header class="sticky top-0 w-full h-[70px] bg-brand-slate text-white flex items-center justify-between px-6 md:px-10 z-50 shadow-md">
+        <div class="brand flex items-center gap-3 text-xl md:text-22px font-bold text-brand-sky">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>SmartRoad Admin</span>
+        </div>
+        <nav class="flex gap-2">
+            <a href="index.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-chart-line"></i> <span class="hidden sm:inline">Dashboard</span></a>
+            <a href="add-hazard.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-plus"></i> <span class="hidden sm:inline">Add Hazard</span></a>
+            <a href="members.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-users"></i> <span class="hidden sm:inline">Members</span></a>
+            <a href="settings.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-gears"></i> <span class="hidden sm:inline">Settings</span></a>
+            <a href="about.html" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-info"></i> <span class="hidden sm:inline">About</span></a>
+        </nav>
+    </header>
+
+    <main class="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">System Configurations Desk</h1>
+            <p class="text-slate-500 text-sm mt-1">Modify maps initialization parameters, profile permissions, and manage road maintenance agency information directories.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <!-- LEFT PANEL: PROFILE & MAP CONTROLS -->
+            <div class="lg:col-span-2 flex flex-col gap-8">
+                
+                <!-- Administrator Profile -->
+                <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-6"><i class="fa-solid fa-user-shield text-brand-blue"></i> Administrator Profile Credentials</h3>
+                    
+                    <div class="flex items-center gap-4 pb-6 border-b border-slate-100 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-brand-blue text-white flex items-center justify-center text-2xl font-bold">SR</div>
+                        <div>
+                            <h4 id="profileDisplayName" class="font-bold text-lg text-slate-800">SmartRoad Admin Core</h4>
+                            <p id="profileDisplayEmail" class="text-slate-400 text-xs mt-0.5">admin@smartroad.net</p>
+                            <span class="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-brand-blue tracking-wider">SYSTEM ROOT AUTHORITY</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="adminNameInput" class="text-xs font-bold text-slate-700">Display Name Handle</label>
+                            <input type="text" id="adminNameInput" value="SmartRoad System Admin" class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="adminEmailInput" class="text-xs font-bold text-slate-700">Contact Notifications Email</label>
+                            <input type="email" id="adminEmailInput" value="notifications@smartroad.net" class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Spatial Initialization Defaults -->
+                <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-6"><i class="fa-solid fa-sliders text-brand-blue"></i> Map Spatial Initialization Defaults</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="setMapCenterLat" class="text-xs font-bold text-slate-700">Default Center Latitude</label>
+                            <input type="number" step="any" id="setMapCenterLat" value="4.2105" class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="setMapCenterLng" class="text-xs font-bold text-slate-700">Default Center Longitude</label>
+                            <input type="number" step="any" id="setMapCenterLng" value="101.9758" class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="setMapZoom" class="text-xs font-bold text-slate-700">Default Map Zoom Factor</label>
+                            <select id="setMapZoom" class="p-3 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                                <option value="5">5 - Continental Outline</option>
+                                <option value="6" selected>6 - Default Malaysia View</option>
+                                <option value="8">8 - Regional Outlook</option>
+                                <option value="11">11 - Sub-City Resolution</option>
+                                <option value="15">15 - Street Grid Resolution</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLA & Escalation Rules Thresholds -->
+                <div class="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-2"><i class="fa-solid fa-clock-rotate-left text-brand-blue"></i> Service-Level Agreement (SLA) & Alerts</h3>
+                    <p class="text-slate-400 text-xs mb-6">Define maximum response rules to auto-escalate stagnant hazard complaints</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="slaThreshold" class="text-xs font-bold text-slate-700">Auto-Escalation Deadline (Hours)</label>
+                            <select id="slaThreshold" class="p-3 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                                <option value="12">12 Hours (Emergency)</option>
+                                <option value="24" selected>24 Hours (1 Day)</option>
+                                <option value="48">48 Hours (2 Days)</option>
+                                <option value="72">72 Hours (3 Days)</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label for="autoAssign" class="text-xs font-bold text-slate-700">Automated Status Assignment On Edit</label>
+                            <select id="autoAssign" class="p-3 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                                <option value="true" selected>Set to "In Progress" on edit</option>
+                                <option value="false">Maintain existing category status</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT PANEL: ROAD MAINTENANCE AGENCIES (CRUD Information Directory) -->
+            <div class="flex flex-col gap-8">
+                
+                <!-- Road Maintenance Agency Directory Control Panel -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-1"><i class="fa-solid fa-person-digging text-brand-blue"></i> Road Maintenance Agencies</h3>
+                    <p class="text-slate-400 text-xs mb-6">Manage responsive public works and maintenance organizations</p>
+                    
+                    <!-- Add Agency Inline Form -->
+                    <form onsubmit="addMaintenanceAgency(event)" class="flex gap-2 mb-5">
+                        <input type="text" id="agencyNameInput" placeholder="Add agency (e.g. JKR Melaka Tengah)..." required class="flex-1 p-2.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-brand-blue transition-colors bg-slate-50 focus:bg-white">
+                        <button type="submit" class="bg-brand-blue hover:bg-brand-hover text-white px-4 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"><i class="fa-solid fa-plus"></i> Add</button>
+                    </form>
+
+                    <!-- Active Agencies Directory Scroll List -->
+                    <div class="flex-1 overflow-y-auto max-h-[300px] border border-slate-100 rounded-lg p-2 bg-slate-50/50 custom-scroll">
+                        <ul id="agencyList" class="flex flex-col gap-2">
+                            <!-- Populated dynamically via script from LocalStorage cache -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Database Housekeeping Controls -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-1"><i class="fa-solid fa-box-archive text-brand-blue"></i> Database Archive Housekeeping</h3>
+                    <p class="text-slate-400 text-xs mb-5">Purge or archive resolved complaints to prevent index congestion</p>
+                    
+                    <button onclick="triggerDatabaseHousekeeping()" class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-nodes"></i> Batch Purge Resolved Logs
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Master Actions Footer -->
+        <div class="flex justify-end gap-3 border-t border-slate-200 pt-6">
+            <button type="button" onclick="applySystemSettings()" class="bg-brand-blue hover:bg-brand-hover text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i> Apply All System Configurations</button>
+        </div>
+    </main>
+
+    <!-- FLOATING SUCCESS TOAST BANNER -->
+    <div id="toastBanner" class="fixed bottom-6 right-6 bg-emerald-500 text-white px-6 py-4 rounded-lg font-semibold shadow-lg flex items-center gap-3 translate-y-[150px] transition-transform duration-300 z-[10000]">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMessage">Configurations applied and cached successfully!</span>
+    </div>
+
+    <!-- UI Overlay Popup: Confirmation Modal -->
+    <div id="confirmationModal" class="hidden opacity-0 pointer-events-none fixed inset-0 w-full h-full bg-slate-900/60 flex items-center justify-center z-[9999] transition-opacity duration-200">
+        <div class="modal-box bg-white p-7 rounded-xl w-full max-w-[440px] shadow-2xl scale-95 transition-transform duration-200">
+            <div id="modalHeader" class="flex items-center gap-3 mb-4 text-lg font-bold text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> Master Warning Prompt</div>
+            <div id="modalBody" class="text-sm text-slate-500 mb-6 leading-relaxed">Are you absolutely sure you want to proceed with this destructive action?</div>
+            <div class="modal-footer flex justify-end gap-3">
+                <button class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" onclick="closeConfirmationModal()">Cancel</button>
+                <button id="modalConfirmBtn" class="px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors">Permanently Execute</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default maintenance agencies to populate if local storage cache is empty
+        const defaultAgencies = [
+            "JKR Melaka Tengah",
+            "JKR Jasin",
+            "JKR Alor Gajah",
+            "Majlis Bandaraya Melaka Bersejarah (MBMB)",
+            "Majlis Perbandaran Hang Tuah Jaya (MPHTJ)"
+        ];
+
+        // Load settings and Maintenance Agency Directories when page loads
+        window.onload = function() {
+            // Load map center parameters
+            if (localStorage.getItem('setMapCenterLat')) {
+                document.getElementById('setMapCenterLat').value = localStorage.getItem('setMapCenterLat');
+            }
+            if (localStorage.getItem('setMapCenterLng')) {
+                document.getElementById('setMapCenterLng').value = localStorage.getItem('setMapCenterLng');
+            }
+            if (localStorage.getItem('setMapZoom')) {
+                document.getElementById('setMapZoom').value = localStorage.getItem('setMapZoom');
+            }
+            
+            // Load SLA rules
+            if (localStorage.getItem('slaThreshold')) {
+                document.getElementById('slaThreshold').value = localStorage.getItem('slaThreshold');
+            }
+            if (localStorage.getItem('autoAssign')) {
+                document.getElementById('autoAssign').value = localStorage.getItem('autoAssign');
+            }
+
+            // Load Admin Profile
+            if (localStorage.getItem('adminName')) {
+                const name = localStorage.getItem('adminName');
+                document.getElementById('adminNameInput').value = name;
+                document.getElementById('profileDisplayName').innerText = name;
+            }
+            if (localStorage.getItem('adminEmail')) {
+                const email = localStorage.getItem('adminEmail');
+                document.getElementById('adminEmailInput').value = email;
+                document.getElementById('profileDisplayEmail').innerText = email;
+            }
+
+            // Initialize and Render Road Maintenance Agency Directory
+            loadAgencies();
+        };
+
+        // Load agencies from local storage or populate defaults
+        function loadAgencies() {
+            let agencies = localStorage.getItem('maintenanceAgencies');
+            if (!agencies) {
+                agencies = defaultAgencies;
+                localStorage.setItem('maintenanceAgencies', JSON.stringify(agencies));
+            } else {
+                agencies = JSON.parse(agencies);
+            }
+            renderAgencies(agencies);
+        }
+
+        // Render maintenance list
+        function renderAgencies(list) {
+            const container = document.getElementById("agencyList");
+            container.innerHTML = "";
+            
+            if (list.length === 0) {
+                container.innerHTML = `<li class="text-center text-slate-400 py-6 text-xs italic">No maintenance agencies logged yet.</li>`;
+                return;
+            }
+
+            list.forEach((agency, index) => {
+                const li = document.createElement("li");
+                li.className = "flex items-center justify-between bg-white px-3.5 py-2.5 rounded-lg border border-slate-200 shadow-sm transition-all hover:border-slate-300";
+                li.innerHTML = `
+                    <span class="text-xs font-semibold text-slate-700"><i class="fa-solid fa-wrench text-slate-400 mr-2"></i> ${agency}</span>
+                    <button onclick="deleteAgency(${index})" type="button" class="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors text-xs" title="Delete Agency Reference"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                container.appendChild(li);
+            });
+        }
+
+        // Add maintenance agency to local storage
+        window.addMaintenanceAgency = function(event) {
+            event.preventDefault();
+            const input = document.getElementById("agencyNameInput");
+            const value = input.value.trim();
+            if (!value) return;
+
+            let agencies = JSON.parse(localStorage.getItem('maintenanceAgencies')) || [];
+            agencies.push(value);
+            localStorage.setItem('maintenanceAgencies', JSON.stringify(agencies));
+            
+            input.value = "";
+            renderAgencies(agencies);
+            showToast("New Maintenance Agency added to directory!");
+        };
+
+        // Delete maintenance agency from local storage
+        window.deleteAgency = function(index) {
+            let agencies = JSON.parse(localStorage.getItem('maintenanceAgencies')) || [];
+            agencies.splice(index, 1);
+            localStorage.setItem('maintenanceAgencies', JSON.stringify(agencies));
+            renderAgencies(agencies);
+            showToast("Agency reference successfully removed.");
+        };
+
+        // Cache system parameters on local storage securely
+        window.applySystemSettings = function() {
+            const lat = document.getElementById("setMapCenterLat").value;
+            const lng = document.getElementById("setMapCenterLng").value;
+            const zoom = document.getElementById("setMapZoom").value;
+            const name = document.getElementById("adminNameInput").value;
+            const email = document.getElementById("adminEmailInput").value;
+            const sla = document.getElementById("slaThreshold").value;
+            const autoAssign = document.getElementById("autoAssign").value;
+
+            localStorage.setItem('setMapCenterLat', lat);
+            localStorage.setItem('setMapCenterLng', lng);
+            localStorage.setItem('setMapZoom', zoom);
+            localStorage.setItem('adminName', name);
+            localStorage.setItem('adminEmail', email);
+            localStorage.setItem('slaThreshold', sla);
+            localStorage.setItem('autoAssign', autoAssign);
+
+            document.getElementById('profileDisplayName').innerText = name;
+            document.getElementById('profileDisplayEmail').innerText = email;
+
+            showToast("Global system configurations saved successfully!");
+        };
+
+        // Housekeeping Dialog Trigger
+        window.triggerDatabaseHousekeeping = function() {
+            const modal = document.getElementById("confirmationModal");
+            const body = document.getElementById("modalBody");
+            const confirmBtn = document.getElementById("modalConfirmBtn");
+
+            body.innerText = "Warning: This action will simulate a database cleanup query, removing/archiving resolved hazard records older than 30 days to free up document cache. This cannot be undone.";
+            
+            confirmBtn.onclick = function() {
+                closeConfirmationModal();
+                showToast("Simulated Batch Housekeeping: Purged 42 resolved cases!");
+            };
+
+            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.add("flex");
+        };
+
+        window.closeConfirmationModal = function() {
+            const modal = document.getElementById("confirmationModal");
+            modal.classList.add("hidden", "opacity-0", "pointer-events-none");
+            modal.classList.remove("flex");
+        };
+
+        // Show toast banner
+        function showToast(message) {
+            const toast = document.getElementById("toastBanner");
+            toast.querySelector("span").innerText = message;
+            toast.classList.remove("translate-y-[150px]");
+            toast.classList.add("translate-y-0");
+            setTimeout(() => {
+                toast.classList.remove("translate-y-0");
+                toast.classList.add("translate-y-[150px]");
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
