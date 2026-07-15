@@ -1,0 +1,24 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.SmartRoadSystem" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize the active indicator color here -->
+        <item name="colorContainer">#DDE8FF</item>
+    </style>
+
+    <style name="Theme.SmartRoadSystem" parent="Base.Theme.SmartRoadSystem" />
+
+    <style name="ProfileImageShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Bottom Navigation Styles -->
+    <style name="BottomNavTextActive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="BottomNavTextInactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+    </style>
+</resources>

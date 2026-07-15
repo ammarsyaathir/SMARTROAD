@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Warna apabila item dipilih (biru) -->
+    <item android:color="#2563EB" android:state_checked="true" />
+
+    <!-- Warna lalai apabila tidak dipilih (kelabu) -->
+    <item android:color="#6B7280" />
+</selector>

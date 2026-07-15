@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "924353097883",
+    "project_id": "smartroad-system",
+    "storage_bucket": "smartroad-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924353097883:android:37977254f1b7d1b0b9d63e",
+        "android_client_info": {
+          "package_name": "com.example.smartroadsystem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "924353097883-0mpnpvku7malkckn57g2vpm4n7bucfun.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smartroadsystem",
+            "certificate_hash": "363d72b159655d7907a4d36fb49039deaa407217"
+          }
+        },
+        {
+          "client_id": "924353097883-3479d7520qs5glnnhvi6nbs4m4gv0lcg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSrTT1u_GyEqErdLKudnk_M8Y6gxuc4zs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "924353097883-3479d7520qs5glnnhvi6nbs4m4gv0lcg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+
+  ],
+  "configuration_version": "1"
+}
