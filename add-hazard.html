@@ -27,6 +27,16 @@
             }
         }
     </script>
+    <script>
+        window.smartRoadMapReady = false;
+        window.initSmartRoadMap = function () {
+            window.smartRoadMapReady = true;
+            if (typeof window.initializeHazardPickerMap === 'function') {
+                window.initializeHazardPickerMap();
+            }
+        };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYCW0NkFXTP2cK-EKpoeVcMrJZuM9MIms&callback=initSmartRoadMap&v=weekly" async defer></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
 
@@ -47,99 +57,123 @@
 
     <main class="flex-1 p-6 md:p-10 max-w-7xl w-full mx-auto">
         <div class="workspace-header mb-8">
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Log New Hazard Record</h1>
-            <p class="text-slate-500 text-sm mt-1">Manually initialize, detect locations, and submit a road hazard observation report directly to the remote server database.</p>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Add New Road Hazard Report</h1>
+            <p class="text-slate-500 text-sm mt-1">Enter the hazard details, choose the correct location, and attach a clear photo before submitting the report.</p>
         </div>
 
-        <!-- Add Hazard Form (Admin CRUD Create) -->
         <form id="addHazardForm" onsubmit="submitNewHazard(event)">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white p-6 md:p-10 rounded-xl border border-slate-200 shadow-sm mb-8">
-                
-                <div class="flex flex-col gap-6">
-                    <h3 class="text-lg font-bold border-b border-slate-100 pb-3 flex items-center gap-2 text-slate-800"><i class="fa-solid fa-circle-info text-brand-blue"></i> Hazard Definition Parameters</h3>
-                    
-                    <div class="flex flex-col gap-2">
-                        <label for="addReporter" class="text-xs font-semibold text-slate-700">Reporter Real Name</label>
-                        <input type="text" id="addReporter" placeholder="e.g. Ahmad Shah" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
-                    </div>
-                    
-                    <div class="flex flex-col gap-2">
-                        <label for="addType" class="text-xs font-semibold text-slate-700">Hazard Classification Type</label>
-                        <select id="addType" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
-                            <option value="Pothole">Pothole</option>
-                            <option value="Flood">Flood</option>
-                            <option value="Accident">Accident</option>
-                            <option value="Fallen Tree">Fallen Tree</option>
-                            <option value="Damaged Road Sign">Damaged Road Sign</option>
-                            <option value="Broken Traffic Light">Broken Traffic Light</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex flex-col gap-2">
-                        <label for="addDescription" class="text-xs font-semibold text-slate-700">Description Summary Statement</label>
-                        <textarea id="addDescription" rows="4" placeholder="Describe the severity, damage, or impact on traffic flow details..." required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors leading-relaxed"></textarea>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+                <section class="lg:col-span-2 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold border-b border-slate-100 pb-4 mb-6 flex items-center gap-2 text-slate-800">
+                        <i class="fa-solid fa-clipboard-list text-brand-blue"></i> Report Details
+                    </h2>
 
-                <div class="flex flex-col gap-6">
-                    <h3 class="text-lg font-bold border-b border-slate-100 pb-3 flex items-center gap-2 text-slate-800"><i class="fa-solid fa-location-crosshairs text-brand-blue"></i> Metadata & Coordinates</h3>
-                    
-                    <!-- Geolocation Permission-based Autofill Trigger -->
-                    <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-5">
+                        <div class="flex flex-col gap-2">
+                            <label for="addReporter" class="text-xs font-semibold text-slate-700">Reporter Name</label>
+                            <input type="text" id="addReporter" placeholder="e.g. Ahmad Shah" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label for="addType" class="text-xs font-semibold text-slate-700">Type of Road Hazard</label>
+                            <select id="addType" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                                <option value="Pothole">Pothole</option>
+                                <option value="Flood">Flood</option>
+                                <option value="Accident">Accident</option>
+                                <option value="Fallen Tree">Fallen Tree</option>
+                                <option value="Damaged Road Sign">Damaged Road Sign</option>
+                                <option value="Broken Traffic Light">Broken Traffic Light</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="addPriority" class="text-xs font-semibold text-slate-700">Priority Level</label>
+                                <span class="text-[10px] text-slate-400">Choose based on safety and traffic impact</span>
+                            </div>
+                            <select id="addPriority" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
+                                <option value="Low">Low — Minor issue, low risk</option>
+                                <option value="Medium" selected>Medium — Needs attention</option>
+                                <option value="High">High — Serious traffic disruption</option>
+                                <option value="Critical">Critical — Immediate danger</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label for="addDescription" class="text-xs font-semibold text-slate-700">Hazard Description</label>
+                            <textarea id="addDescription" rows="6" placeholder="Describe what happened, the road condition, affected lane, and any danger to road users..." required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors leading-relaxed"></textarea>
+                            <p class="text-[11px] text-slate-400">Include useful details such as lane affected, traffic condition, or nearby landmarks.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lg:col-span-3 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold border-b border-slate-100 pb-4 mb-6 flex items-center gap-2 text-slate-800">
+                        <i class="fa-solid fa-location-dot text-brand-blue"></i> Hazard Location
+                    </h2>
+
+                    <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
                         <div class="flex items-center gap-3">
-                            <div class="text-2xl text-brand-blue"><i class="fa-solid fa-compass" id="compassIcon"></i></div>
+                            <div class="text-2xl text-brand-blue"><i class="fa-solid fa-location-crosshairs" id="compassIcon"></i></div>
                             <div>
-                                <h4 class="text-xs font-bold text-slate-800">Auto-Detect Coordinates</h4>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Let your browser safely capture your live GPS coordinates.</p>
+                                <h3 class="text-sm font-bold text-slate-800">Use Current Location</h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Use the device location, or click the map to select another place.</p>
                             </div>
                         </div>
-                        <button type="button" id="detectLocBtn" onclick="detectLocation()" class="bg-brand-blue hover:bg-brand-hover text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all whitespace-nowrap"><i class="fa-solid fa-location-arrow mr-1"></i> <span id="detectLocText">Get GPS Location</span></button>
+                        <button type="button" id="detectLocBtn" onclick="detectLocation()" class="bg-brand-blue hover:bg-brand-hover text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all whitespace-nowrap">
+                            <i class="fa-solid fa-location-arrow mr-1"></i> <span id="detectLocText">Use My Location</span>
+                        </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-2">
-                            <label for="addLatitude" class="text-xs font-semibold text-slate-700">Latitude Coordinate</label>
-                            <input type="number" step="any" id="addLatitude" placeholder="e.g. 2.3115" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label for="addLongitude" class="text-xs font-semibold text-slate-700">Longitude Coordinate</label>
-                            <input type="number" step="any" id="addLongitude" placeholder="e.g. 102.3218" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
-                        </div>
-                    </div>
+                    <div id="hazardPickerMap" class="w-full h-[330px] rounded-xl border border-slate-200 mb-5"></div>
+                    <p class="text-[11px] text-slate-500 mb-5"><i class="fa-solid fa-circle-info mr-1"></i> Click the map or drag the marker to place the hazard accurately.</p>
 
-                    <!-- Simulated Geocode Result Box -->
-                    <div id="geocodeBox" class="hidden transition-all duration-300">
+                    <div id="geocodeBox" class="hidden mb-5 transition-all duration-300">
                         <div class="flex flex-col gap-1 bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Detected Locale Area</span>
-                            <div class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-red-500"></i> <span id="geocodeValue">Merlimau, Malacca, Malaysia</span></div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Selected Address</span>
+                            <div class="text-xs font-semibold text-slate-700 flex items-start gap-1.5"><i class="fa-solid fa-location-dot text-red-500 mt-0.5"></i> <span id="geocodeValue">Location address</span></div>
                         </div>
                     </div>
-                    
-                    <!-- Advanced Local Device Photo Uploader -->
+
+                    <details class="group border border-slate-200 rounded-xl mb-6">
+                        <summary class="cursor-pointer list-none px-4 py-3 flex items-center justify-between text-sm font-semibold text-slate-700">
+                            <span><i class="fa-solid fa-map-pin text-brand-blue mr-2"></i>Location Coordinates</span>
+                            <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 pb-4">
+                            <div class="flex flex-col gap-2">
+                                <label for="addLatitude" class="text-xs font-semibold text-slate-700">Latitude</label>
+                                <input type="number" step="any" id="addLatitude" placeholder="e.g. 2.3115" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label for="addLongitude" class="text-xs font-semibold text-slate-700">Longitude</label>
+                                <input type="number" step="any" id="addLongitude" placeholder="e.g. 102.3218" required class="p-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white outline-none focus:border-brand-blue transition-colors">
+                            </div>
+                        </div>
+                    </details>
+
                     <div class="flex flex-col gap-2">
-                        <label class="text-xs font-semibold text-slate-700">Evidence Photo Attachment</label>
+                        <label class="text-xs font-semibold text-slate-700">Hazard Photo</label>
                         <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-brand-blue rounded-xl p-6 text-center cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-all flex flex-col items-center justify-center gap-2 relative min-h-[160px]">
                             <input type="file" id="imageUpload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" required onchange="handleImageFile(this.files)">
-                            
                             <div id="uploadPlaceholder" class="flex flex-col items-center gap-2">
-                                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
-                                <p class="text-xs font-semibold text-slate-600">Drag and drop your image here, or click to browse</p>
-                                <p class="text-[10px] text-slate-400">Supports JPG, PNG, GIF (Max size: 10MB)</p>
+                                <i class="fa-solid fa-camera text-3xl text-slate-400"></i>
+                                <p class="text-xs font-semibold text-slate-600">Click to select a photo or drag it here</p>
+                                <p class="text-[10px] text-slate-400">Use a clear JPG or PNG image showing the hazard.</p>
                             </div>
-                            
                             <div id="uploadPreview" class="hidden w-full flex flex-col items-center gap-3">
-                                <img id="previewImage" src="#" alt="Preview" class="max-h-36 rounded-lg object-cover border border-slate-200 shadow-sm">
+                                <img id="previewImage" src="#" alt="Selected hazard photo" class="max-h-40 rounded-lg object-cover border border-slate-200 shadow-sm">
                                 <button type="button" onclick="removeSelectedImage(event)" class="text-xs text-red-500 font-semibold hover:underline flex items-center gap-1.5"><i class="fa-solid fa-trash"></i> Remove Photo</button>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <div class="flex justify-end gap-3 mb-12">
-                <button type="reset" onclick="resetFormState()" class="px-6 py-3 rounded-lg text-sm font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors">Clear Fields</button>
-                <button type="submit" id="submitBtn" class="px-6 py-3 rounded-lg text-sm font-semibold text-white bg-brand-blue hover:bg-brand-hover shadow-sm flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-cloud-arrow-up" id="submitIcon"></i> <span id="submitText">Upload Hazard Report</span>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mb-12">
+                <button type="reset" onclick="resetFormState()" class="px-6 py-3 rounded-lg text-sm font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-colors">Clear Form</button>
+                <button type="submit" id="submitBtn" class="px-6 py-3 rounded-lg text-sm font-semibold text-white bg-brand-blue hover:bg-brand-hover shadow-sm flex items-center justify-center gap-2 transition-all">
+                    <i class="fa-solid fa-paper-plane" id="submitIcon"></i> <span id="submitText">Submit Report</span>
                 </button>
             </div>
         </form>
@@ -150,18 +184,81 @@
         import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
-          apiKey: "AIzaSyBk8kuzTObIibyXjP2vSOdnttz9hy0zh7A",
-          authDomain: "fir-mapapp-6d8d9.firebaseapp.com",
-          databaseURL: "https://fir-mapapp-6d8d9-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "fir-mapapp-6d8d9",
-          storageBucket: "fir-mapapp-6d8d9.firebasestorage.app",
-          messagingSenderId: "508858384144",
-          appId: "1:508858384144:web:d6c562be2ed98fe5c0ef95",
-          measurementId: "G-ZV2Q428QD5"
+            apiKey: "AIzaSyCGpk7V9VhEROYY-O8Ggd4dO71GluBwvaA",
+            authDomain: "smartroad-system.firebaseapp.com",
+            projectId: "smartroad-system",
+            storageBucket: "smartroad-system.firebasestorage.app",
+            messagingSenderId: "924353097883",
+            appId: "1:924353097883:web:4ff818b5ce706576b9d63e"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        let hazardPickerMap = null;
+        let hazardPickerMarker = null;
+        let geocoder = null;
+
+        window.initializeHazardPickerMap = function () {
+            const mapElement = document.getElementById("hazardPickerMap");
+            if (!mapElement || hazardPickerMap || !window.google?.maps) return;
+
+            const initialPosition = {
+                lat: parseFloat(document.getElementById("addLatitude").value) || 2.3115,
+                lng: parseFloat(document.getElementById("addLongitude").value) || 102.3218
+            };
+
+            hazardPickerMap = new google.maps.Map(mapElement, {
+                center: initialPosition,
+                zoom: 13,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+            geocoder = new google.maps.Geocoder();
+            setPickerMarker(initialPosition);
+
+            hazardPickerMap.addListener("click", (event) => {
+                const position = { lat: event.latLng.lat(), lng: event.latLng.lng() };
+                setPickerMarker(position);
+                updateCoordinateFields(position, true);
+            });
+        };
+
+        function setPickerMarker(position) {
+            if (!hazardPickerMarker) {
+                hazardPickerMarker = new google.maps.Marker({
+                    position,
+                    map: hazardPickerMap,
+                    draggable: true,
+                    title: "Hazard location"
+                });
+                hazardPickerMarker.addListener("dragend", () => {
+                    const pos = hazardPickerMarker.getPosition();
+                    updateCoordinateFields({ lat: pos.lat(), lng: pos.lng() }, true);
+                });
+            } else {
+                hazardPickerMarker.setPosition(position);
+            }
+        }
+
+        function updateCoordinateFields(position, reverseGeocode = false) {
+            document.getElementById("addLatitude").value = position.lat.toFixed(6);
+            document.getElementById("addLongitude").value = position.lng.toFixed(6);
+            hazardPickerMap?.panTo(position);
+            if (reverseGeocode && geocoder) {
+                geocoder.geocode({ location: position }, (results, status) => {
+                    const box = document.getElementById("geocodeBox");
+                    const value = document.getElementById("geocodeValue");
+                    if (status === "OK" && results[0]) {
+                        value.innerText = results[0].formatted_address;
+                        box.classList.remove("hidden");
+                    }
+                });
+            }
+        }
+
+        if (window.smartRoadMapReady) window.initializeHazardPickerMap();
 
         // State holder for base64 compressed data url
         window.uploadedImageBase64 = "";
@@ -198,7 +295,7 @@
 
             // Show accessing spinner inside dropzone
             const placeholder = document.getElementById("uploadPlaceholder");
-            placeholder.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-blue"></i><p class="text-xs font-semibold text-slate-600">Compressing Image for Cloud Upload...</p>`;
+            placeholder.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-blue"></i><p class="text-xs font-semibold text-slate-600">Preparing Photo...</p>`;
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -251,9 +348,9 @@
             
             const placeholder = document.getElementById("uploadPlaceholder");
             placeholder.innerHTML = `
-                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400"></i>
-                <p class="text-xs font-semibold text-slate-600">Drag and drop your image here, or click to browse</p>
-                <p class="text-[10px] text-slate-400">Supports JPG, PNG, GIF (Max size: 10MB)</p>
+                <i class="fa-solid fa-camera text-3xl text-slate-400"></i>
+                <p class="text-xs font-semibold text-slate-600">Click to select a photo or drag it here</p>
+                <p class="text-[10px] text-slate-400">Use a clear JPG or PNG image showing the hazard.</p>
             `;
             placeholder.classList.remove("hidden");
         };
@@ -282,16 +379,25 @@
                     (position) => {
                         document.getElementById("addLatitude").value = position.coords.latitude.toFixed(6);
                         document.getElementById("addLongitude").value = position.coords.longitude.toFixed(6);
-                        btnText.innerText = "Coordinates Set!";
+                        btnText.innerText = "Location Selected";
                         btn.classList.remove("animate-pulse");
                         compass.className = "fa-solid fa-circle-check text-emerald-500";
 
-                        // Auto geocoding simulator UI to match Malacca coordinates context
-                        geocodeValue.innerText = "Merlimau, Malacca, Malaysia (Auto Detected)";
-                        geocodeBox.classList.remove("hidden");
+                        const detectedPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        if (hazardPickerMap) {
+                            setPickerMarker(detectedPosition);
+                            hazardPickerMap.setZoom(16);
+                            updateCoordinateFields(detectedPosition, true);
+                        } else {
+                            geocodeValue.innerText = `${detectedPosition.lat.toFixed(6)}, ${detectedPosition.lng.toFixed(6)}`;
+                            geocodeBox.classList.remove("hidden");
+                        }
 
                         setTimeout(() => {
-                            btnText.innerText = "Get GPS Location";
+                            btnText.innerText = "Use My Location";
                         }, 3000);
                     },
                     (error) => {
@@ -301,7 +407,7 @@
                         btnText.innerText = "Access Denied";
                         alert("Permission denied. Ensure your browser is allowed to access your device location.");
                         setTimeout(() => {
-                            btnText.innerText = "Get GPS Location";
+                            btnText.innerText = "Use My Location";
                             compass.className = "fa-solid fa-compass";
                         }, 3000);
                     },
@@ -317,7 +423,7 @@
             event.preventDefault();
 
             if (!window.uploadedImageBase64) {
-                alert("Please select and upload an evidence photo from your device.");
+                alert("Please attach a clear photo of the road hazard.");
                 return;
             }
 
@@ -329,20 +435,22 @@
             btn.disabled = true;
             btn.classList.add("opacity-70", "cursor-not-allowed");
             icon.className = "fa-solid fa-circle-notch fa-spin";
-            text.innerText = "Uploading to Firestore...";
+            text.innerText = "Submitting Report...";
             
             const reporter = document.getElementById("addReporter").value;
             const type = document.getElementById("addType").value;
             const description = document.getElementById("addDescription").value;
+            const priority = document.getElementById("addPriority").value;
             const latitude = parseFloat(document.getElementById("addLatitude").value);
             const longitude = parseFloat(document.getElementById("addLongitude").value);
             const now = new Date();
 
             try {
-                await addDoc(collection(db, "hazards"), {
+                await addDoc(collection(db, "reports"), {
                     reportedBy: reporter,
                     hazardType: type,
                     description: description,
+                    priority: priority,
                     latitude: latitude,
                     longitude: longitude,
                     imageUrl: window.uploadedImageBase64,
@@ -360,8 +468,8 @@
                 alert("Firestore transaction failed. Check database security rules.");
                 btn.disabled = false;
                 btn.classList.remove("opacity-70", "cursor-not-allowed");
-                icon.className = "fa-solid fa-cloud-arrow-up";
-                text.innerText = "Upload Hazard Report";
+                icon.className = "fa-solid fa-paper-plane";
+                text.innerText = "Submit Report";
             }
         };
     </script>

@@ -76,7 +76,7 @@
             <a href="add-hazard.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-plus"></i> <span class="hidden sm:inline">Add Hazard</span></a>
             <a href="members.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-users"></i> <span class="hidden sm:inline">Members</span></a>
             <a href="settings.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-gears"></i> <span class="hidden sm:inline">Settings</span></a>
-            <a href="about.html" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-info"></i> <span class="hidden sm:inline">About</span></a>
+            <a href="about.html" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transition-all"><i class="fa-solid fa-circle-info"></i> <span class="hidden sm:inline">About</span></a>
 
         </nav>
     </header>
@@ -88,35 +88,35 @@
         </div>
 
         <!-- Metrics Cards Section -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="metricCards">
+            <button type="button" data-card-filter="all" onclick="applyCardFilter('all')" class="metric-card bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left">
                 <div>
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Complaints</h3>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Reports</h3>
                     <p id="total-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
                 </div>
                 <div class="w-12 h-12 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center text-xl"><i class="fa-solid fa-database"></i></div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+            </button>
+            <button type="button" data-card-filter="New" onclick="applyCardFilter('New')" class="metric-card bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left">
                 <div>
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">New/Open</h3>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">New / Open</h3>
                     <p id="new-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
                 </div>
                 <div class="w-12 h-12 rounded-lg bg-red-50 text-red-500 flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+            </button>
+            <button type="button" data-card-filter="In Progress" onclick="applyCardFilter('In Progress')" class="metric-card bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left">
                 <div>
                     <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">In Progress</h3>
                     <p id="progress-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
                 </div>
                 <div class="w-12 h-12 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center text-xl"><i class="fa-solid fa-person-digging"></i></div>
-            </div>
-            <div class="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+            </button>
+            <button type="button" data-card-filter="Resolved" onclick="applyCardFilter('Resolved')" class="metric-card bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left">
                 <div>
-                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Resolved</h3>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Resolved History</h3>
                     <p id="resolved-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
                 </div>
                 <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
-            </div>
+            </button>
         </div>
 
         <!-- Google Maps Layout Frame -->
@@ -126,11 +126,17 @@
         </div>
 
         <!-- Filtering & Search Strip -->
-        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900"><i class="fa-solid fa-list-check"></i> Manage Incident Statements</h2>
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-lg font-semibold flex items-center gap-2 text-slate-900"><i class="fa-solid fa-list-check"></i> Incident Management</h2>
+                <p id="currentViewLabel" class="text-xs text-slate-500 mt-1">Showing active reports: New and In Progress</p>
+            </div>
+            <button type="button" onclick="showPriorityGuide()" class="text-xs font-semibold text-brand-blue hover:text-brand-hover flex items-center gap-1.5"><i class="fa-solid fa-circle-question"></i> How priority is calculated</button>
+        </div>
         <div class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-center justify-between mb-6">
             <div class="relative flex-1 min-w-[280px]">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchBar" placeholder="Search by user reporter name..." onkeyup="filterReports()" class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-blue transition-colors bg-slate-50 focus:bg-white">
+                <input type="text" id="searchBar" placeholder="Search report ID, reporter, hazard or description..." onkeyup="filterReports()" class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-blue transition-colors bg-slate-50 focus:bg-white">
             </div>
             
             <div class="flex flex-wrap gap-3 items-center w-full lg:w-auto">
@@ -147,7 +153,7 @@
                 <input type="date" id="dateFilter" onchange="filterReports()" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white outline-none focus:border-brand-blue transition-colors">
 
                 <select id="statusFilter" onchange="filterReports()" class="px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue transition-colors">
-                    <option value="">All Active Statuses</option>
+                    <option value="">Current card selection</option>
                     <option value="New">New</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Resolved">Resolved</option>
@@ -168,7 +174,6 @@
                             <th class="p-4">Priority</th>
                             <th class="p-4">Coordinates</th>
                             <th class="p-4">Timestamp</th>
-                            <th class="p-4 text-center">Evidence</th>
                             <th class="p-4 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -243,8 +248,13 @@
                     </div>
 
                     <div>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Device Client Payload (User-Agent)</span>
-                        <div id="detAgent" class="text-[11px] text-slate-500 font-mono bg-slate-100 p-2.5 border border-slate-200 rounded-lg mt-1 break-all">---</div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Firebase User ID</span>
+                        <div id="detUserId" class="text-[11px] text-slate-500 font-mono bg-slate-100 p-2.5 border border-slate-200 rounded-lg mt-1 break-all">---</div>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Last Updated</span>
+                        <div id="detUpdatedAt" class="text-sm font-medium text-slate-700">Not updated yet</div>
                     </div>
                 </div>
                 
@@ -258,15 +268,17 @@
                     </div>
                     
                     <div>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Description Summary Statement</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">User Description</span>
                         <div id="detDesc" class="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-24 overflow-y-auto leading-relaxed custom-scroll">---</div>
                     </div>
+
+
                 </div>
             </div>
 
             <div class="border-t border-slate-200 pt-5 bg-slate-50 p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <label for="detStatusSelect" class="text-xs text-slate-500 font-bold uppercase tracking-wider whitespace-nowrap">Complaint Status:</label>
+                    <label for="detStatusSelect" class="text-xs text-slate-500 font-bold uppercase tracking-wider whitespace-nowrap">Review Status:</label>
                     <select id="detStatusSelect" class="px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white outline-none cursor-pointer focus:border-brand-blue w-full sm:w-48 shadow-sm">
                         <option value="New">New</option>
                         <option value="In Progress">In Progress</option>
@@ -274,8 +286,7 @@
                     </select>
                 </div>
                 <div class="flex gap-2.5 w-full sm:w-auto justify-end">
-                    <button class="px-4 py-2.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors shadow-sm" onclick="closeDetailsModal()">Close Details</button>
-                    <button id="detSaveStatusBtn" class="px-5 py-2.5 rounded-lg text-xs font-bold bg-brand-blue hover:bg-brand-hover text-white transition-all flex items-center gap-1.5 shadow-md"><i class="fa-solid fa-floppy-disk"></i> Save Status</button>
+                    <button id="detSaveStatusBtn" class="px-5 py-2.5 rounded-lg text-xs font-bold bg-brand-blue hover:bg-brand-hover text-white transition-all flex items-center gap-1.5 shadow-md"><i class="fa-solid fa-clipboard-check"></i> Save Review</button>
                 </div>
             </div>
         </div>
@@ -335,17 +346,15 @@
     <!-- Firestore Streaming Operations Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
-          apiKey: "AIzaSyBk8kuzTObIibyXjP2vSOdnttz9hy0zh7A",
-          authDomain: "fir-mapapp-6d8d9.firebaseapp.com",
-          databaseURL: "https://fir-mapapp-6d8d9-default-rtdb.asia-southeast1.firebasedatabase.app",
-          projectId: "fir-mapapp-6d8d9",
-          storageBucket: "fir-mapapp-6d8d9.firebasestorage.app",
-          messagingSenderId: "508858384144",
-          appId: "1:508858384144:web:d6c562be2ed98fe5c0ef95",
-          measurementId: "G-ZV2Q428QD5"
+  apiKey: "AIzaSyCGpk7V9VhEROYY-O8Ggd4dO71GluBwvaA",
+            authDomain: "smartroad-system.firebaseapp.com",
+            projectId: "smartroad-system",
+            storageBucket: "smartroad-system.firebasestorage.app",
+            messagingSenderId: "924353097883",
+            appId: "1:924353097883:web:4ff818b5ce706576b9d63e"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -355,6 +364,7 @@
         let map;
         let activeMarkers = {};
         let pendingAction = null;
+        let activeCardFilter = "active";
 
         // Initialize Google Maps Component Engine Workspace
         window.initMapReal = function() {
@@ -366,7 +376,6 @@
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: zoomVal,
                 center: startingCenter,
-                mapId: "DEMO_MAP_ID",
             });
             
             if (allReports.length > 0) {
@@ -437,7 +446,7 @@
         }
 
         // Active Firestore Stream Framework Engine for Hazards
-        onSnapshot(collection(db, "hazards"), (snapshot) => {
+        onSnapshot(collection(db, "reports"), (snapshot) => {
             allReports = [];
             let total = 0, countNew = 0, countProgress = 0, countDone = 0;
 
@@ -460,13 +469,38 @@
             window.filterReports(); 
         });
 
+        function getPriority(report) {
+            const explicit = String(report.priority || report.severity || '').trim().toUpperCase();
+            const styles = {
+                CRITICAL: "bg-red-100 text-red-700 font-extrabold",
+                HIGH: "bg-orange-100 text-orange-700 font-bold",
+                MEDIUM: "bg-amber-100 text-amber-700 font-bold",
+                LOW: "bg-emerald-100 text-emerald-700 font-bold"
+            };
+            if (styles[explicit]) return { label: explicit, className: styles[explicit] };
+
+            const type = String(report.hazardType || '').toLowerCase();
+            if (["accident", "flood", "broken traffic light"].includes(type)) return { label: "CRITICAL", className: styles.CRITICAL };
+            if (["fallen tree"].includes(type)) return { label: "HIGH", className: styles.HIGH };
+            if (["pothole", "damaged road sign"].includes(type)) return { label: "MEDIUM", className: styles.MEDIUM };
+            return { label: "LOW", className: styles.LOW };
+        }
+
+        window.showPriorityGuide = function() {
+            openConfirmation({
+                icon: "fa-layer-group", iconClass: "text-brand-blue", title: "Priority Calculation",
+                message: "Priority first uses the priority or severity value stored in Firebase. When no value exists, SmartRoad assigns: Critical for Accident, Flood, or Broken Traffic Light; High for Fallen Tree; Medium for Pothole or Damaged Road Sign; and Low for other types.",
+                confirmText: "Understood", confirmClass: "bg-brand-blue hover:bg-brand-hover", onConfirm: async () => {}
+            });
+        };
+
         // HTML tables generator
         function renderTable(dataList) {
             const tbody = document.getElementById("table-body");
             tbody.innerHTML = "";
 
             if (dataList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-slate-400 py-10 font-medium">No operational hazard notifications matched target filter parameters.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-slate-400 py-10 font-medium">No operational hazard notifications matched target filter parameters.</td></tr>`;
                 return;
             }
 
@@ -478,16 +512,9 @@
                 if (currentStatus === "In Progress") themeClass = "progress-state";
                 if (currentStatus === "Resolved") themeClass = "resolved-state";
 
-                let priorityText = "LOW";
-                let priorityClass = "bg-slate-100 text-slate-600";
-                
-                if (report.hazardType === "Accident" || report.hazardType === "Flood") {
-                    priorityText = "CRITICAL";
-                    priorityClass = "bg-red-100 text-red-700 font-extrabold";
-                } else if (report.hazardType === "Pothole" || report.hazardType === "Broken Traffic Light") {
-                    priorityText = "MEDIUM";
-                    priorityClass = "bg-orange-100 text-orange-700 font-bold";
-                }
+                const priority = getPriority(report);
+                const priorityText = priority.label;
+                const priorityClass = priority.className;
 
                 let displayDate = "---", displayTime = "";
                 if (report.submit && typeof report.submit.toDate === 'function') {
@@ -501,8 +528,8 @@
 
                 let row = `<tr class="hover:bg-slate-50 transition-colors">
                     <td class="p-4">
-                        <a href="#" class="report-id-link text-brand-blue font-bold hover:underline" onclick="openDetailsModal('${report.id}'); event.preventDefault();">
-                            #${report.id.substring(0,6)}
+                        <a href="#" class="report-id-link inline-flex items-center gap-1.5 text-brand-blue font-bold hover:underline" title="Open full report, evidence and status" onclick="openDetailsModal('${report.id}'); event.preventDefault();">
+                            #${report.id.substring(0,6)} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                         </a>
                     </td>
                     <td class="p-4">
@@ -514,7 +541,7 @@
                         <span class="text-slate-400 text-xs block max-w-xs truncate">${report.description || 'No description summary.'}</span>
                     </td>
                     <td class="p-4">
-                        <select title="Change Status Option" class="status-select px-3 py-1.5 rounded-full text-xs font-semibold outline-none cursor-pointer select-none bg-slate-100 border-none ${themeClass}" onchange="promptStatusChange('${report.id}', this.value, '${currentStatus}')">
+                        <select title="Change Status Option" class="status-select px-3 py-1.5 rounded-full text-xs font-semibold outline-none cursor-pointer select-none bg-slate-100 border-none ${themeClass}" onchange="promptStatusChange('${report.id}', this.value, '${currentStatus}', this)">
                             <option value="New" ${currentStatus==='New'?'selected':''}>New</option>
                             <option value="In Progress" ${currentStatus==='In Progress'?'selected':''}>In Progress</option>
                             <option value="Resolved" ${currentStatus==='Resolved'?'selected':''}>Resolved</option>
@@ -529,14 +556,8 @@
                         </button>
                     </td>
                     <td class="p-4 text-slate-700 text-xs font-medium">${displayDate}<br><span class="text-slate-400 font-normal block mt-0.5">${displayTime}</span></td>
-                    <td class="p-4 text-center">
-                        <a href="${report.imageUrl || '#'}" target="_blank" class="inline-block">
-                            <img class="img-thumbnail w-12 h-12 object-cover rounded-md border border-slate-200" src="${report.imageUrl || 'https://via.placeholder.com/150'}" alt="Evidence"/>
-                        </a>
-                    </td>
                     <td class="p-4 text-right">
                         <div class="flex items-center justify-end gap-1.5">
-                            <button class="btn-edit-inline text-brand-blue hover:bg-blue-50 p-2 rounded-lg text-sm transition-colors" onclick="openEditModal('${report.id}')" title="Modify Road Hazard Details"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button class="btn-delete text-red-500 hover:bg-red-50 p-2 rounded-lg text-sm transition-colors" onclick="promptDeleteReport('${report.id}')" title="Permanently Erase Log Entry"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </td>
@@ -546,9 +567,11 @@
         }
 
         // Show elegant custom success notifications banner
-        function showToast(message) {
+        function showToast(message, isError = false) {
             const toast = document.getElementById("toastBanner");
             document.getElementById("toastMessage").innerText = message;
+            toast.classList.toggle("bg-red-500", isError);
+            toast.classList.toggle("bg-emerald-500", !isError);
             toast.classList.remove("translate-y-[150px]");
             toast.classList.add("translate-y-0");
             setTimeout(() => {
@@ -589,10 +612,22 @@
             document.getElementById("detUserInit").innerText = firstChar;
 
             document.getElementById("detType").innerText = report.hazardType || "Unclassified Incident";
-            document.getElementById("detCoords").innerText = `${parseFloat(report.latitude || 0).toFixed(6)}, ${parseFloat(report.longitude || 0).toFixed(6)}`;
+            const coordinateText = report.coordinates ||
+                `${parseFloat(report.latitude || 0).toFixed(6)}, ${parseFloat(report.longitude || 0).toFixed(6)}`;
+            document.getElementById("detCoords").innerText = coordinateText;
             document.getElementById("detTimestamp").innerText = formattedTime;
-            document.getElementById("detAgent").innerText = report.userAgent || "No data client string mapped.";
-            document.getElementById("detDesc").innerText = report.description || "No supplemental details summary statement filed.";
+            document.getElementById("detUserId").innerText = report.userId || "Not available";
+
+            let updatedText = "Not updated yet";
+            if (report.updatedAt && typeof report.updatedAt.toDate === "function") {
+                const updatedDate = report.updatedAt.toDate();
+                updatedText = `${updatedDate.toLocaleDateString("en-GB")} ${updatedDate.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                })}`;
+            }
+            document.getElementById("detUpdatedAt").innerText = updatedText;
             
             const imgElement = document.getElementById("detImage");
             const imgLink = document.getElementById("detImageLink");
@@ -607,16 +642,31 @@
                 focusOnMap(report.id);
             };
 
-            document.getElementById("detSaveStatusBtn").onclick = async function() {
+            document.getElementById("detSaveStatusBtn").onclick = function() {
                 const newStatus = statusSelect.value;
-                try {
-                    const reportRef = doc(db, "hazards", report.id);
-                    await updateDoc(reportRef, { status: newStatus });
-                    closeDetailsModal();
-                    showToast("Complaint Status saved successfully!");
-                } catch (err) {
-                    console.error("Save state mismatch: ", err);
+                const statusChanged = newStatus !== (report.status || "New");
+
+                if (!statusChanged && !noteChanged) {
+                    showToast("No review changes were made.", true);
+                    return;
                 }
+
+                closeDetailsModal();
+                openConfirmation({
+                    icon: "fa-clipboard-check",
+                    iconClass: "text-brand-blue",
+                    title: "Confirm Report Review",
+                    confirmText: "Save Review",
+                    confirmClass: "bg-brand-blue hover:bg-brand-hover",
+                    onConfirm: async () => {
+                        await updateDoc(doc(db, "reports", report.id), {
+                            status: newStatus,
+                            adminNote,
+                            updatedAt: serverTimestamp()
+                        });
+                        showToast("Report review saved successfully.");
+                    }
+                });
             };
 
             const modal = document.getElementById("detailsModal");
@@ -630,66 +680,64 @@
             modal.classList.remove("flex");
         };
 
-        // Custom Confirmation dialogs for Status Updates
-        window.promptStatusChange = function(id, newStatus, currentStatus) {
+        function openConfirmation({ icon, iconClass, title, message, confirmText, confirmClass, onConfirm, onCancel }) {
             const modal = document.getElementById("confirmationModal");
-            const header = document.getElementById("modalHeader");
-            const body = document.getElementById("modalBody");
+            document.getElementById("modalHeader").innerHTML = `<i class="fa-solid ${icon} ${iconClass}"></i> ${title}`;
+            document.getElementById("modalBody").innerText = message;
             const confirmBtn = document.getElementById("modalConfirmBtn");
-
-            header.innerHTML = `<i class="fa-solid fa-arrows-rotate text-brand-blue"></i> Confirm Status Mutation`;
-            body.innerText = `Are you sure you want to alter this hazard notice status sequence from "${currentStatus}" to "${newStatus}"? This alteration syncs across all client configurations instantly.`;
-            
-            confirmBtn.className = "btn btn-confirm bg-brand-blue hover:bg-brand-hover text-white";
-            confirmBtn.innerText = "Update Status";
-            
-            confirmBtn.onclick = async function() {
+            confirmBtn.className = `px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ${confirmClass}`;
+            confirmBtn.innerText = confirmText;
+            confirmBtn.onclick = async () => {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Processing';
                 try {
-                    const reportRef = doc(db, "hazards", id);
-                    await updateDoc(reportRef, { status: newStatus });
-                    closeConfirmationModal();
-                    showToast("Incident status updated successfully!");
-                } catch (err) { console.error(err); }
+                    await onConfirm();
+                    closeConfirmationModal(false);
+                } catch (error) {
+                    console.error(error);
+                    showToast("Action failed. Check Firebase permissions and try again.", true);
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerText = confirmText;
+                }
             };
-
+            pendingAction = { onCancel };
             modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
             modal.classList.add("flex");
-            pendingAction = { type: 'status', id: id, element: event.target, fallback: currentStatus };
+        }
+
+        window.promptStatusChange = function(id, newStatus, currentStatus, selectElement = null) {
+            if (newStatus === currentStatus) return;
+            openConfirmation({
+                icon: "fa-arrows-rotate", iconClass: "text-brand-blue",
+                title: "Confirm Status Update",
+                message: `Are you sure you want to change report #${id.substring(0,6)} from “${currentStatus}” to “${newStatus}”?`,
+                confirmText: "Update Status", confirmClass: "bg-brand-blue hover:bg-brand-hover",
+                onConfirm: async () => {
+                    await updateDoc(doc(db, "reports", id), { status: newStatus, updatedAt: serverTimestamp() });
+                    showToast("Report status updated successfully.");
+                },
+                onCancel: () => { if (selectElement) selectElement.value = currentStatus; }
+            });
         };
 
-        // Custom Confirmation dialogs for Deletions
         window.promptDeleteReport = function(id) {
-            const modal = document.getElementById("confirmationModal");
-            const header = document.getElementById("modalHeader");
-            const body = document.getElementById("modalBody");
-            const confirmBtn = document.getElementById("modalConfirmBtn");
-
-            header.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Permanent Record Deletion Request`;
-            body.innerText = `Warning: You are attempting to completely purge report reference item #${id.substring(0,6)} from the system storage indexes. This operation is non-reversible.`;
-            
-            confirmBtn.className = "btn btn-danger bg-red-600 hover:bg-red-700 text-white";
-            confirmBtn.innerText = "Permanently Delete";
-            
-            confirmBtn.onclick = async function() {
-                try {
-                    await deleteDoc(doc(db, "hazards", id));
-                    closeConfirmationModal();
-                    showToast("Record successfully deleted from Firestore!");
-                } catch(err) { console.error(err); }
-            };
-
-            modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
-            modal.classList.add("flex");
-            pendingAction = { type: 'delete', id: id };
+            openConfirmation({
+                icon: "fa-triangle-exclamation", iconClass: "text-red-500",
+                title: "Confirm Report Deletion",
+                message: `Are you sure you want to permanently delete report #${id.substring(0,6)}? This action cannot be undone.`,
+                confirmText: "Delete Report", confirmClass: "bg-red-600 hover:bg-red-700",
+                onConfirm: async () => {
+                    await deleteDoc(doc(db, "reports", id));
+                    showToast("Report deleted successfully.");
+                }
+            });
         };
 
-        window.closeConfirmationModal = function() {
+        window.closeConfirmationModal = function(runCancel = true) {
             const modal = document.getElementById("confirmationModal");
             modal.classList.add("hidden", "opacity-0", "pointer-events-none");
             modal.classList.remove("flex");
-            if (pendingAction && pendingAction.type === 'status') {
-                pendingAction.element.value = pendingAction.fallback;
-            }
+            if (runCancel && pendingAction?.onCancel) pendingAction.onCancel();
             pendingAction = null;
         };
 
@@ -717,68 +765,92 @@
             document.getElementById("editHazardForm").reset();
         };
 
-        window.updateHazardRecord = async function(event) {
+        window.updateHazardRecord = function(event) {
             event.preventDefault();
             const id = document.getElementById("editReportId").value;
-            const updatedType = document.getElementById("editTypeInput").value;
-            const updatedLat = parseFloat(document.getElementById("editLatitudeInput").value);
-            const updatedLng = parseFloat(document.getElementById("editLongitudeInput").value);
-            const updatedDesc = document.getElementById("editDescriptionInput").value;
-            const updatedImg = document.getElementById("editImageUrlInput").value;
+            const payload = {
+                hazardType: document.getElementById("editTypeInput").value,
+                latitude: parseFloat(document.getElementById("editLatitudeInput").value),
+                longitude: parseFloat(document.getElementById("editLongitudeInput").value),
+                description: document.getElementById("editDescriptionInput").value.trim(),
+                imageUrl: document.getElementById("editImageUrlInput").value.trim(),
+                coordinates: `${parseFloat(document.getElementById("editLatitudeInput").value).toFixed(6)}, ${parseFloat(document.getElementById("editLongitudeInput").value).toFixed(6)}`,
+                updatedAt: serverTimestamp()
+            };
 
-            try {
-                const reportRef = doc(db, "hazards", id);
-                await updateDoc(reportRef, {
-                    hazardType: updatedType,
-                    latitude: updatedLat,
-                    longitude: updatedLng,
-                    description: updatedDesc,
-                    imageUrl: updatedImg
-                });
-                closeEditModal();
-                showToast("Hazard record updated successfully!");
-            } catch(err) {
-                console.error("Failed to update hazard record: ", err);
-            }
+            closeEditModal();
+            openConfirmation({
+                icon: "fa-pen-to-square",
+                iconClass: "text-brand-blue",
+                title: "Confirm Report Update",
+                message: `Are you sure you want to save the changes to report #${id.substring(0,6)}?`,
+                confirmText: "Save Changes",
+                confirmClass: "bg-brand-blue hover:bg-brand-hover",
+                onConfirm: async () => {
+                    await updateDoc(doc(db, "reports", id), payload);
+                    showToast("Report details updated successfully.");
+                }
+            });
         };
 
-        // Filtering engine based on search input, type, status, and date fields
-        window.filterReports = function() {
-            let userKeyword = document.getElementById("searchBar").value.toLowerCase();
-            let selectType = document.getElementById("typeFilter").value;
-            let selectStatus = document.getElementById("statusFilter").value;
-            let selectDate = document.getElementById("dateFilter").value; // Format: YYYY-MM-DD
+        window.applyCardFilter = function(filter) {
+            activeCardFilter = filter;
+            document.querySelectorAll('[data-card-filter]').forEach(card => {
+                const selected = card.dataset.cardFilter === filter;
+                card.classList.toggle('ring-2', selected);
+                card.classList.toggle('ring-brand-blue', selected);
+                card.classList.toggle('border-brand-blue', selected);
+            });
+            document.getElementById('statusFilter').value = '';
+            const labels = {
+                all: 'Showing all reports, including resolved history',
+                New: 'Showing new and unassigned reports',
+                'In Progress': 'Showing reports currently being handled',
+                Resolved: 'Showing resolved report history',
+                active: 'Showing active reports: New and In Progress'
+            };
+            document.getElementById('currentViewLabel').innerText = labels[filter] || labels.active;
+            filterReports();
+        };
 
-            let filtered = allReports.filter(report => {
-                let normalizeStatus = report.status === "Under Investigation" ? "In Progress" : report.status;
-                let matchesUser = (report.reportedBy || '').toLowerCase().includes(userKeyword);
-                let matchesType = selectType === "" || report.hazardType === selectType;
-                let matchesStatus = selectStatus === "" || normalizeStatus === selectStatus;
-                
+        window.filterReports = function() {
+            const keyword = document.getElementById("searchBar").value.toLowerCase().trim();
+            const selectType = document.getElementById("typeFilter").value;
+            const manualStatus = document.getElementById("statusFilter").value;
+            const selectDate = document.getElementById("dateFilter").value;
+
+            const filtered = allReports.filter(report => {
+                const status = report.status === "Under Investigation" ? "In Progress" : (report.status || 'New');
+                const searchable = [report.id, report.reportedBy, report.hazardType, report.description].join(' ').toLowerCase();
+                const matchesKeyword = searchable.includes(keyword);
+                const matchesType = !selectType || report.hazardType === selectType;
+
+                let matchesCard = true;
+                if (manualStatus) matchesCard = status === manualStatus;
+                else if (activeCardFilter === 'active') matchesCard = status !== 'Resolved';
+                else if (activeCardFilter !== 'all') matchesCard = status === activeCardFilter;
+
                 let matchesDate = true;
-                if (selectDate !== "") {
+                if (selectDate) {
                     let formattedDocDate = "";
                     if (report.submit && typeof report.submit.toDate === 'function') {
-                        const jsDate = report.submit.toDate();
-                        const year = jsDate.getFullYear();
-                        const month = String(jsDate.getMonth() + 1).padStart(2, '0');
-                        const day = String(jsDate.getDate()).padStart(2, '0');
-                        formattedDocDate = `${year}-${month}-${day}`;
+                        const d = report.submit.toDate();
+                        formattedDocDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     } else if (report.date) {
                         const parts = report.date.split('/');
-                        if (parts.length === 3) {
-                            formattedDocDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                        }
+                        formattedDocDate = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : report.date;
                     }
-                    matchesDate = (formattedDocDate === selectDate);
+                    matchesDate = formattedDocDate === selectDate;
                 }
-
-                return matchesUser && matchesType && matchesStatus && matchesDate;
+                return matchesKeyword && matchesType && matchesCard && matchesDate;
             });
 
             renderTable(filtered);
             updateMapMarkers(filtered);
         };
-    </script>
+
+        applyCardFilter('active');
+
+</script>
 </body>
 </html>
