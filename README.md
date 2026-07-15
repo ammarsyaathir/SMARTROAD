@@ -1,47 +1,103 @@
-**🚦 SmartRoad System**
-A Smart Road Hazard Reporting & Monitoring System for Communities
+# 🚦 SmartRoad System
 
-**📱 Overview**
-**SmartRoad System** is a community-driven road hazard reporting platform designed to bridge the gap between road users and local authorities. By combining a mobile application for real-time reporting with a centralized web dashboard for management, the system provides a complete, end-to-end workflow for road safety.
+> **A Smart Road Hazard Reporting & Monitoring System for Communities**
 
-This project is a complete full-stack solution featuring:
-		- Android Mobile Application: Enabling public users to report hazards instantly from the field.
-		- Web-based Administration Dashboard: Empowering administrators to monitor, verify, and resolve reported road issues.
+---
 
-**✨ System Architecture**
-The system is built on a scalable, cloud-first architecture to ensure real-time data synchronization between the mobile app and the web dashboard.
-Frontend (Mobile App): Android (Java) with Google Maps SDK & Material Design.
-Frontend (Admin Dashboard): Responsive HTML/CSS/JavaScript with Bootstrap.
-Backend & Database: Firebase Authentication & Cloud Firestore (Real-time synchronization).
+# 📱 Overview
 
-**🚀 Key Features**
+SmartRoad System is a community-driven road hazard reporting platform designed to bridge the communication gap between road users and local authorities. The system enables users to report road hazards directly from their mobile devices while allowing administrators to monitor, verify, and manage reports through a centralized web dashboard.
 
-**📱 Android Mobile Application**
-Instant Hazard Reporting: Report potholes, debris, or accidents in seconds.
-Geolocation Intelligence: Automated location capture using Google Maps & GPS.
-Visual Verification: Capture and upload photos directly to your report.
-Real-time Map View: Visualize nearby hazards reported by the community.
+This project consists of two integrated platforms:
 
-**💻 Web Administration Dashboard**
-Dynamic Analytics: Monitor active, pending, and resolved road hazards.
-Evidence Management: Review and verify photo evidence submitted by users.
-Report Lifecycle: Update report statuses (e.g., "In Progress," "Fixed") seamlessly.
-User & Member Control: Centralized management for authorized administrators.
+- 📱 **Android Mobile Application** – Enables users to report road hazards with GPS location, photos, and detailed information.
+- 💻 **Web-based Administration Dashboard** – Allows administrators to monitor reports, verify submissions, update hazard statuses, and manage users.
 
-**🛠 Technology Stack**
+Together, these platforms provide a complete end-to-end solution for improving road safety through community participation and real-time data management.
+
+---
+
+# ✨ System Architecture
+
+The SmartRoad System is built using a cloud-based architecture that synchronizes data between the Android application and the web dashboard in real time.
+
+- **📱 Mobile Application:** Android (Java), Material Design, Google Maps SDK
+- **💻 Web Dashboard:** HTML5, CSS3, JavaScript, Bootstrap
+- **☁️ Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
+- **🗺️ Maps:** Google Maps SDK & Google Maps API
+
+---
+
+# 🚀 Key Features
+
+## 📱 Android Mobile Application
+
+- User Authentication (Email & Google Sign-In)
+- Real-time Road Hazard Reporting
+- GPS Location Detection
+- Google Maps Integration
+- Select Hazard Location on Map
+- Capture & Upload Hazard Photos
+- View Existing Hazard Markers
+- User Profile Management
+- Firebase Cloud Firestore Integration
+
+---
+
+## 💻 Web Administration Dashboard
+
+- Administrator Login
+- Dashboard Analytics
+- Manage Road Hazard Reports
+- View Report Details & Evidence Photos
+- Update Hazard Status
+- Delete Reports
+- Member Management
+- Interactive Google Maps
+- System Settings
+
+---
+
+# 🛠 Technology Stack
 
 | Platform | Technologies |
-| :--- | :--- |
-| **Mobile** | Java, Android Studio, Material Design |
-| **Web** | HTML5, CSS3, JavaScript, Bootstrap |
-| **Backend** | Firebase Auth, Cloud Firestore |
+|----------|--------------|
+| 📱 Mobile | Java, Android Studio, Material Design |
+| 💻 Web | HTML5, CSS3, JavaScript, Bootstrap |
+| ☁️ Backend | Firebase Authentication, Cloud Firestore, Firebase Storage |
+| 🗺️ Maps | Google Maps SDK, Google Maps API |
 
-**🚀 Getting Started**
-*Android*
-- git clone https://github.com/ammarsyaathir/SMARTROAD.git
-- Open the project in Android Studio.
-- Configure your google-services.json file in the app/ folder.
-- Run the application on an emulator or physical device.
+---
 
-*Web Dashboard*
-- Simply open index.html in your browser, or deploy the folder via Firebase Hosting or XAMPP.
+# 📂 Project Structure
+
+```text
+SmartRoad-System/
+├── app/                    # Android Source Code (Java)
+├── assets/                 # Images & UI Resources
+├── Web-Dashboard/          # Web-based Admin Dashboard
+├── .gitignore
+└── README.md
+```
+
+# 🚀 Getting Started
+
+## 📱 Android Application
+
+```bash
+git clone https://github.com/ammarsyaathir/SMARTROAD.git
+```
+
+1. Open the project using **Android Studio**.
+2. Add your `google-services.json` file into the `app/` directory.
+3. Sync Gradle dependencies.
+4. Run the application on an Android emulator or physical device.
+
+---
+
+## 💻 Web Administration Dashboard
+
+1. Open the `Web-Dashboard` folder.
+2. Launch `index.html` in your web browser.
+
+
