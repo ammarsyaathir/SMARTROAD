@@ -1,13 +1,14 @@
 package com.example.smartroadsystem;
 
-import android.content.ContentResolver;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -17,35 +18,47 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.FutureTarget;
 import com.example.smartroadsystem.databinding.FragmentProfileBinding;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageException;
-import com.google.firebase.storage.StorageMetadata;
-import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class ProfileFragment extends Fragment {
+
+    /*
+     * A profile picture is displayed inside a relatively small
+     * circular ImageView, so 512px is clear enough while helping
+     * keep the Firestore user document below its size limit.
+     */
+    private static final int MAX_PROFILE_IMAGE_DIMENSION = 512;
+
+    /*
+     * Base64 increases the byte size by approximately 33%.
+     * Keeping the compressed JPEG at around 220 KB leaves enough
+     * room for the user's other Firestore fields.
+     */
+    private static final int MAX_PROFILE_IMAGE_BYTES =
+            220 * 1024;
 
     private FragmentProfileBinding binding;
 
     private FirebaseAuth firebaseAuth;
     private FirebaseFirestore firestore;
-    private FirebaseStorage firebaseStorage;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
 
-    private boolean isUploadingPhoto = false;
+    private boolean isProcessingPhoto = false;
 
     public ProfileFragment() {
         // Required empty public constructor.
@@ -57,12 +70,6 @@ public class ProfileFragment extends Fragment {
     ) {
         super.onCreate(savedInstanceState);
 
-        /*
-         * Open Android gallery/image picker.
-         *
-         * The selected Uri points to the original image file,
-         * so the image is uploaded without Bitmap compression.
-         */
         imagePickerLauncher =
                 registerForActivityResult(
                         new ActivityResultContracts.GetContent(),
@@ -73,7 +80,7 @@ public class ProfileFragment extends Fragment {
                             }
 
                             /*
-                             * Display a preview before uploading.
+                             * Show an immediate local preview.
                              */
                             if (binding != null) {
                                 Glide.with(this)
@@ -84,7 +91,7 @@ public class ProfileFragment extends Fragment {
                                         );
                             }
 
-                            uploadProfileImage(
+                            processAndSaveProfileImage(
                                     imageUri
                             );
                         }
@@ -130,13 +137,6 @@ public class ProfileFragment extends Fragment {
 
         firestore =
                 FirebaseFirestore.getInstance();
-
-        /*
-         * Automatically use the Firebase Storage bucket
-         * configured in google-services.json.
-         */
-        firebaseStorage =
-                FirebaseStorage.getInstance();
     }
 
     private void setupClickListeners() {
@@ -151,25 +151,16 @@ public class ProfileFragment extends Fragment {
                         openImagePicker()
                 );
 
-        /*
-         * Camera icon displayed above the profile picture.
-         */
         binding.cardChangePhoto
                 .setOnClickListener(view ->
                         openImagePicker()
                 );
 
-        /*
-         * Open report-history page.
-         */
         binding.cardMyReports
                 .setOnClickListener(view ->
                         openMyReportsPage()
                 );
 
-        /*
-         * The report-summary card also opens report history.
-         */
         binding.cardReportSummary
                 .setOnClickListener(view ->
                         openMyReportsPage()
@@ -182,7 +173,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void openImagePicker() {
-        if (isUploadingPhoto) {
+        if (isProcessingPhoto) {
             return;
         }
 
@@ -208,9 +199,6 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        String userId =
-                currentUser.getUid();
-
         displayAuthenticationEmail(
                 currentUser
         );
@@ -219,12 +207,14 @@ public class ProfileFragment extends Fragment {
                 currentUser
         );
 
-        binding.tvProfileName.setText(
-                "Loading..."
-        );
+        if (binding != null) {
+            binding.tvProfileName.setText(
+                    "Loading..."
+            );
+        }
 
         firestore.collection("users")
-                .document(userId)
+                .document(currentUser.getUid())
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
 
@@ -296,19 +286,24 @@ public class ProfileFragment extends Fragment {
                 "user"
         );
 
+        /*
+         * Keep the Google account photo initially.
+         * A custom Base64 photo will replace this field later.
+         */
         if (currentUser.getPhotoUrl() != null) {
-            userData.put(
-                    "photoUrl",
+            String authenticationPhoto =
                     currentUser
                             .getPhotoUrl()
-                            .toString()
+                            .toString();
+
+            userData.put(
+                    "photoUrl",
+                    authenticationPhoto
             );
 
             userData.put(
                     "profileImageUrl",
-                    currentUser
-                            .getPhotoUrl()
-                            .toString()
+                    authenticationPhoto
             );
         }
 
@@ -336,30 +331,6 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    private void displayAuthenticationEmail(
-            @NonNull FirebaseUser currentUser
-    ) {
-        if (binding == null) {
-            return;
-        }
-
-        String email =
-                currentUser.getEmail();
-
-        if (
-                email == null ||
-                        email.trim().isEmpty()
-        ) {
-            binding.tvProfileEmail.setText(
-                    "Email unavailable"
-            );
-        } else {
-            binding.tvProfileEmail.setText(
-                    email
-            );
-        }
-    }
-
     private void displayFirestoreProfile(
             @NonNull DocumentSnapshot documentSnapshot,
             @NonNull FirebaseUser currentUser
@@ -384,8 +355,7 @@ public class ProfileFragment extends Fragment {
                 );
 
         /*
-         * Compatibility with code that previously used
-         * profileImageUrl.
+         * Compatibility with previous code.
          */
         if (
                 photoUrl == null ||
@@ -422,6 +392,10 @@ public class ProfileFragment extends Fragment {
             binding.tvProfileEmail.setText(
                     email
             );
+        } else {
+            displayAuthenticationEmail(
+                    currentUser
+            );
         }
 
         if (lastLoginTimestamp != null) {
@@ -450,6 +424,8 @@ public class ProfileFragment extends Fragment {
                             .getPhotoUrl()
                             .toString()
             );
+        } else {
+            displayDefaultProfileImage();
         }
     }
 
@@ -480,7 +456,27 @@ public class ProfileFragment extends Fragment {
                             .getPhotoUrl()
                             .toString()
             );
+        } else {
+            displayDefaultProfileImage();
         }
+    }
+
+    private void displayAuthenticationEmail(
+            @NonNull FirebaseUser currentUser
+    ) {
+        if (binding == null) {
+            return;
+        }
+
+        String email =
+                currentUser.getEmail();
+
+        binding.tvProfileEmail.setText(
+                email == null ||
+                        email.trim().isEmpty()
+                        ? "Email unavailable"
+                        : email
+        );
     }
 
     private String getFirebaseDisplayName(
@@ -499,40 +495,113 @@ public class ProfileFragment extends Fragment {
         return displayName;
     }
 
+    /**
+     * Loads either:
+     *
+     * 1. A Base64 data URI stored in Firestore.
+     * 2. A normal web image URL such as a Google profile picture.
+     */
     private void loadProfileImage(
-            @Nullable String imageUrl
+            @Nullable String imageValue
     ) {
         if (
                 binding == null ||
-                        imageUrl == null ||
-                        imageUrl.trim().isEmpty()
+                        imageValue == null ||
+                        imageValue.trim().isEmpty()
         ) {
+            displayDefaultProfileImage();
             return;
         }
 
-        /*
-         * Do not use override(124, 124).
-         * That could decode the image at a lower resolution.
-         *
-         * The original image remains stored in Firebase Storage.
-         */
-        Glide.with(this)
-                .load(imageUrl)
-                .dontAnimate()
-                .centerCrop()
-                .placeholder(
-                        android.R.drawable.sym_def_app_icon
+        String trimmedValue =
+                imageValue.trim();
+
+        if (
+                trimmedValue.startsWith(
+                        "data:image"
                 )
-                .error(
-                        android.R.drawable.sym_def_app_icon
-                )
-                .skipMemoryCache(true)
-                .into(
-                        binding.ivProfileAvatar
-                );
+        ) {
+            byte[] imageBytes =
+                    decodeBase64Image(
+                            trimmedValue
+                    );
+
+            if (
+                    imageBytes == null ||
+                            imageBytes.length == 0
+            ) {
+                displayDefaultProfileImage();
+                return;
+            }
+
+            Glide.with(this)
+                    .load(imageBytes)
+                    .dontAnimate()
+                    .centerCrop()
+                    .placeholder(
+                            android.R.drawable.sym_def_app_icon
+                    )
+                    .error(
+                            android.R.drawable.sym_def_app_icon
+                    )
+                    .into(
+                            binding.ivProfileAvatar
+                    );
+
+        } else {
+            Glide.with(this)
+                    .load(trimmedValue)
+                    .dontAnimate()
+                    .centerCrop()
+                    .placeholder(
+                            android.R.drawable.sym_def_app_icon
+                    )
+                    .error(
+                            android.R.drawable.sym_def_app_icon
+                    )
+                    .into(
+                            binding.ivProfileAvatar
+                    );
+        }
     }
 
-    private void uploadProfileImage(
+    @Nullable
+    private byte[] decodeBase64Image(
+            @NonNull String dataUri
+    ) {
+        try {
+            int commaIndex =
+                    dataUri.indexOf(',');
+
+            String base64Content =
+                    commaIndex >= 0
+                            ? dataUri.substring(
+                            commaIndex + 1
+                    )
+                            : dataUri;
+
+            return Base64.decode(
+                    base64Content,
+                    Base64.DEFAULT
+            );
+
+        } catch (IllegalArgumentException exception) {
+            exception.printStackTrace();
+            return null;
+        }
+    }
+
+    private void displayDefaultProfileImage() {
+        if (binding == null) {
+            return;
+        }
+
+        binding.ivProfileAvatar.setImageResource(
+                android.R.drawable.sym_def_app_icon
+        );
+    }
+
+    private void processAndSaveProfileImage(
             @NonNull Uri imageUri
     ) {
         FirebaseUser currentUser =
@@ -547,174 +616,228 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        if (isUploadingPhoto) {
+        if (isProcessingPhoto) {
             return;
         }
 
-        setPhotoLoading(true);
-
-        String userId =
-                currentUser.getUid();
-
-        String mimeType =
-                getImageMimeType(
-                        imageUri
-                );
-
-        String extension =
-                getImageExtension(
-                        imageUri
-                );
+        setPhotoLoading(
+                true
+        );
 
         /*
-         * Use a new filename every time.
-         *
-         * This avoids displaying an older cached picture.
+         * Image decoding and compression should not run
+         * on the main UI thread.
          */
-        String fileName =
-                "profile_" +
-                        System.currentTimeMillis() +
-                        "." +
-                        extension;
+        new Thread(() -> {
 
-        StorageReference imageReference =
-                firebaseStorage
-                        .getReference()
-                        .child("profile_images")
-                        .child(userId)
-                        .child(fileName);
-
-        StorageMetadata metadata =
-                new StorageMetadata.Builder()
-                        .setContentType(
-                                mimeType
-                        )
-                        .setCustomMetadata(
-                                "uploadedBy",
-                                userId
-                        )
-                        .build();
-
-        /*
-         * putFile uploads the original selected image.
-         *
-         * There is no Bitmap conversion and no JPEG compression,
-         * so the stored image retains its original quality.
-         */
-        imageReference
-                .putFile(
-                        imageUri,
-                        metadata
-                )
-                .continueWithTask(task -> {
-
-                    if (!task.isSuccessful()) {
-                        Exception exception =
-                                task.getException();
-
-                        if (exception != null) {
-                            throw exception;
-                        }
-                    }
-
-                    return imageReference
-                            .getDownloadUrl();
-                })
-                .addOnSuccessListener(downloadUri -> {
-
-                    saveProfileImageUrl(
-                            currentUser,
-                            downloadUri
+            String base64Image =
+                    createOptimisedBase64Image(
+                            imageUri
                     );
-                })
-                .addOnFailureListener(exception -> {
 
-                    setPhotoLoading(false);
+            if (!isAdded()) {
+                return;
+            }
+
+            requireActivity().runOnUiThread(() -> {
+
+                if (
+                        binding == null ||
+                                !isAdded()
+                ) {
+                    return;
+                }
+
+                if (
+                        base64Image == null ||
+                                base64Image.trim().isEmpty()
+                ) {
+                    setPhotoLoading(
+                            false
+                    );
 
                     /*
-                     * Reload the previously saved photo when
-                     * the new upload fails.
+                     * Restore the currently saved image.
                      */
                     loadUserData();
 
-                    showStorageError(
-                            "Unable to upload profile image.",
-                            exception
+                    showToast(
+                            "Unable to process the selected profile picture."
                     );
-                });
+
+                    return;
+                }
+
+                saveProfileImageToFirestore(
+                        currentUser,
+                        base64Image
+                );
+            });
+        }).start();
     }
 
-    @NonNull
-    private String getImageMimeType(
+    /**
+     * Uses Glide to:
+     *
+     * - Respect image rotation metadata.
+     * - Resize large gallery images efficiently.
+     * - Avoid loading a full multi-megapixel image unnecessarily.
+     */
+    @Nullable
+    private String createOptimisedBase64Image(
             @NonNull Uri imageUri
     ) {
-        ContentResolver contentResolver =
-                requireContext()
-                        .getContentResolver();
+        FutureTarget<Bitmap> futureTarget =
+                null;
 
-        String mimeType =
-                contentResolver.getType(
-                        imageUri
-                );
+        Bitmap selectedBitmap =
+                null;
 
-        if (
-                mimeType == null ||
-                        !mimeType.startsWith("image/")
+        try {
+            futureTarget =
+                    Glide.with(
+                                    requireContext()
+                            )
+                            .asBitmap()
+                            .load(imageUri)
+                            .submit(
+                                    MAX_PROFILE_IMAGE_DIMENSION,
+                                    MAX_PROFILE_IMAGE_DIMENSION
+                            );
+
+            selectedBitmap =
+                    futureTarget.get();
+
+            if (selectedBitmap == null) {
+                return null;
+            }
+
+            byte[] compressedBytes =
+                    compressBitmapWithinLimit(
+                            selectedBitmap
+                    );
+
+            if (
+                    compressedBytes == null ||
+                            compressedBytes.length == 0
+            ) {
+                return null;
+            }
+
+            return Base64.encodeToString(
+                    compressedBytes,
+                    Base64.NO_WRAP
+            );
+
+        } catch (
+                ExecutionException |
+                InterruptedException exception
         ) {
-            return "image/jpeg";
-        }
+            exception.printStackTrace();
 
-        return mimeType;
+            if (
+                    exception instanceof
+                            InterruptedException
+            ) {
+                Thread.currentThread()
+                        .interrupt();
+            }
+
+            return null;
+
+        } finally {
+            if (futureTarget != null) {
+                try {
+                    Glide.with(
+                            requireContext()
+                    ).clear(
+                            futureTarget
+                    );
+                } catch (Exception ignored) {
+                    // Fragment may already be detached.
+                }
+            }
+        }
     }
 
-    @NonNull
-    private String getImageExtension(
-            @NonNull Uri imageUri
+    /**
+     * Starts with good JPEG quality and lowers it only when
+     * necessary to stay below the target size.
+     */
+    @Nullable
+    private byte[] compressBitmapWithinLimit(
+            @NonNull Bitmap bitmap
     ) {
-        String mimeType =
-                getImageMimeType(
-                        imageUri
-                );
+        int jpegQuality = 88;
 
-        String extension =
-                MimeTypeMap
-                        .getSingleton()
-                        .getExtensionFromMimeType(
-                                mimeType
-                        );
+        byte[] compressedBytes =
+                null;
 
-        if (
-                extension == null ||
-                        extension.trim().isEmpty()
-        ) {
-            return "jpg";
+        while (jpegQuality >= 50) {
+            ByteArrayOutputStream outputStream =
+                    new ByteArrayOutputStream();
+
+            boolean successful =
+                    bitmap.compress(
+                            Bitmap.CompressFormat.JPEG,
+                            jpegQuality,
+                            outputStream
+                    );
+
+            if (!successful) {
+                return null;
+            }
+
+            compressedBytes =
+                    outputStream.toByteArray();
+
+            if (
+                    compressedBytes.length <=
+                            MAX_PROFILE_IMAGE_BYTES
+            ) {
+                return compressedBytes;
+            }
+
+            jpegQuality -= 7;
         }
 
-        return extension;
+        /*
+         * Keep a slightly larger image only when it remains
+         * safely below the Firestore document limit.
+         */
+        if (
+                compressedBytes != null &&
+                        compressedBytes.length <=
+                                300 * 1024
+        ) {
+            return compressedBytes;
+        }
+
+        return null;
     }
 
-    private void saveProfileImageUrl(
+    private void saveProfileImageToFirestore(
             @NonNull FirebaseUser currentUser,
-            @NonNull Uri downloadUri
+            @NonNull String base64Image
     ) {
-        String imageUrl =
-                downloadUri.toString();
+        String dataUri =
+                "data:image/jpeg;base64," +
+                        base64Image;
 
         Map<String, Object> profileUpdates =
                 new HashMap<>();
 
         /*
-         * Save both fields for compatibility with your
-         * current and previous code.
+         * Keep both names for compatibility with earlier code.
          */
         profileUpdates.put(
                 "photoUrl",
-                imageUrl
+                dataUri
         );
 
         profileUpdates.put(
                 "profileImageUrl",
-                imageUrl
+                dataUri
         );
 
         profileUpdates.put(
@@ -730,43 +853,19 @@ public class ProfileFragment extends Fragment {
                 )
                 .addOnSuccessListener(unused -> {
 
-                    updateAuthenticationPhoto(
-                            currentUser,
-                            downloadUri
+                    if (
+                            binding == null ||
+                                    !isAdded()
+                    ) {
+                        return;
+                    }
+
+                    setPhotoLoading(
+                            false
                     );
-                })
-                .addOnFailureListener(exception -> {
-
-                    setPhotoLoading(false);
-
-                    showToast(
-                            "The image was uploaded, but its URL could not be saved to Firestore: " +
-                                    exception.getMessage()
-                    );
-                });
-    }
-
-    private void updateAuthenticationPhoto(
-            @NonNull FirebaseUser currentUser,
-            @NonNull Uri downloadUri
-    ) {
-        UserProfileChangeRequest profileUpdates =
-                new UserProfileChangeRequest.Builder()
-                        .setPhotoUri(
-                                downloadUri
-                        )
-                        .build();
-
-        currentUser
-                .updateProfile(
-                        profileUpdates
-                )
-                .addOnSuccessListener(unused -> {
-
-                    setPhotoLoading(false);
 
                     loadProfileImage(
-                            downloadUri.toString()
+                            dataUri
                     );
 
                     showToast(
@@ -775,57 +874,26 @@ public class ProfileFragment extends Fragment {
                 })
                 .addOnFailureListener(exception -> {
 
-                    /*
-                     * Storage and Firestore were already updated.
-                     * Only the Firebase Authentication profile failed.
-                     */
-                    setPhotoLoading(false);
+                    if (
+                            binding == null ||
+                                    !isAdded()
+                    ) {
+                        return;
+                    }
 
-                    loadProfileImage(
-                            downloadUri.toString()
+                    setPhotoLoading(
+                            false
                     );
 
-                    showToast(
-                            "Picture saved, but the authentication profile could not be updated."
-                    );
+                    loadUserData();
+
+                    Toast.makeText(
+                            requireContext(),
+                            "Unable to save profile picture: " +
+                                    exception.getMessage(),
+                            Toast.LENGTH_LONG
+                    ).show();
                 });
-    }
-
-    private void showStorageError(
-            @NonNull String title,
-            @NonNull Exception exception
-    ) {
-        if (!isAdded()) {
-            return;
-        }
-
-        String message = title;
-
-        if (exception instanceof StorageException) {
-            StorageException storageException =
-                    (StorageException) exception;
-
-            message =
-                    title +
-                            "\nStorage code: " +
-                            storageException.getErrorCode() +
-                            "\n" +
-                            storageException.getMessage();
-
-        } else if (
-                exception.getMessage() != null
-        ) {
-            message =
-                    title +
-                            "\n" +
-                            exception.getMessage();
-        }
-
-        Toast.makeText(
-                requireContext(),
-                message,
-                Toast.LENGTH_LONG
-        ).show();
     }
 
     private void displayLastLoginDate(
@@ -906,9 +974,17 @@ public class ProfileFragment extends Fragment {
         String userId =
                 currentUser.getUid();
 
-        binding.tvMyReportsCount.setText("0");
-        binding.tvResolvedCount.setText("0");
-        binding.tvPendingCount.setText("0");
+        binding.tvMyReportsCount.setText(
+                "0"
+        );
+
+        binding.tvResolvedCount.setText(
+                "0"
+        );
+
+        binding.tvPendingCount.setText(
+                "0"
+        );
 
         firestore.collection("reports")
                 .whereEqualTo(
@@ -949,10 +1025,18 @@ public class ProfileFragment extends Fragment {
                                         );
 
                         if (
-                                normalizedStatus.equals("resolved") ||
-                                        normalizedStatus.equals("completed") ||
-                                        normalizedStatus.equals("fixed") ||
-                                        normalizedStatus.equals("closed")
+                                normalizedStatus.equals(
+                                        "resolved"
+                                ) ||
+                                        normalizedStatus.equals(
+                                                "completed"
+                                        ) ||
+                                        normalizedStatus.equals(
+                                                "fixed"
+                                        ) ||
+                                        normalizedStatus.equals(
+                                                "closed"
+                                        )
                         ) {
                             resolvedReports++;
                         } else {
@@ -984,9 +1068,11 @@ public class ProfileFragment extends Fragment {
                                     : "View " +
                                     totalReports +
                                     " submitted report" +
-                                    (totalReports == 1
-                                            ? ""
-                                            : "s") +
+                                    (
+                                            totalReports == 1
+                                                    ? ""
+                                                    : "s"
+                                    ) +
                                     " and status updates"
                     );
                 })
@@ -996,9 +1082,17 @@ public class ProfileFragment extends Fragment {
                         return;
                     }
 
-                    binding.tvMyReportsCount.setText("0");
-                    binding.tvResolvedCount.setText("0");
-                    binding.tvPendingCount.setText("0");
+                    binding.tvMyReportsCount.setText(
+                            "0"
+                    );
+
+                    binding.tvResolvedCount.setText(
+                            "0"
+                    );
+
+                    binding.tvPendingCount.setText(
+                            "0"
+                    );
 
                     showToast(
                             "Unable to load report summary: " +
@@ -1013,30 +1107,18 @@ public class ProfileFragment extends Fragment {
         }
 
         /*
-         * MyReportsFragment must exist before using this method.
+         * MainActivity keeps the Profile navigation item selected.
          */
-        getParentFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        android.R.anim.fade_in,
-                        android.R.anim.fade_out,
-                        android.R.anim.fade_in,
-                        android.R.anim.fade_out
-                )
-                .replace(
-                        R.id.fragment_container,
-                        new MyReportsFragment()
-                )
-                .addToBackStack(
-                        "my_reports"
-                )
-                .commit();
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity())
+                    .openMyReportsFragment();
+        }
     }
 
     private void setPhotoLoading(
             boolean loading
     ) {
-        isUploadingPhoto = loading;
+        isProcessingPhoto = loading;
 
         if (binding == null) {
             return;
@@ -1062,7 +1144,7 @@ public class ProfileFragment extends Fragment {
 
         binding.btnChangePhoto.setText(
                 loading
-                        ? "Uploading..."
+                        ? "Processing..."
                         : "Change Photo"
         );
     }
@@ -1093,7 +1175,10 @@ public class ProfileFragment extends Fragment {
                         Intent.FLAG_ACTIVITY_CLEAR_TASK
         );
 
-        startActivity(intent);
+        startActivity(
+                intent
+        );
+
         requireActivity().finish();
     }
 
@@ -1115,10 +1200,6 @@ public class ProfileFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        /*
-         * Refresh report statistics after returning
-         * from My Reports.
-         */
         if (
                 firestore != null &&
                         firebaseAuth != null &&

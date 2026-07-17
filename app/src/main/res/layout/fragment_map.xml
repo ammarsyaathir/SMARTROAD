@@ -7,8 +7,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F4F7FB"
-    android:fillViewport="true"
     android:clipToPadding="false"
+    android:fillViewport="true"
     android:paddingBottom="12dp"
     tools:context=".MapFragment">
 
@@ -107,11 +107,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:letterSpacing="0.08"
                             android:text="WELCOME"
                             android:textColor="#BFD2FF"
                             android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.08" />
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tvWelcome"
@@ -183,11 +183,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:letterSpacing="0.06"
                             android:text="CURRENT GPS COORDINATES"
                             android:textColor="#BFD2FF"
                             android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.06" />
+                            android:textStyle="bold" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -292,18 +292,56 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="330dp"
+            android:layout_height="550dp"
             android:layout_marginBottom="14dp"
             app:cardCornerRadius="22dp"
             app:cardElevation="3dp"
             app:strokeColor="#DEE4EF"
             app:strokeWidth="1dp">
 
-            <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/google_map"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent">
+
+                <androidx.fragment.app.FragmentContainerView
+                    android:id="@+id/google_map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMapType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Change map type"
+                    android:elevation="8dp"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="Normal"
+                    android:textAllCaps="false"
+                    android:textColor="#1C2B4A"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#FFFFFF"
+                    app:cornerRadius="13dp"
+                    app:icon="@android:drawable/ic_dialog_map"
+                    app:iconGravity="textStart"
+                    app:iconPadding="7dp"
+                    app:iconSize="18dp"
+                    app:iconTint="#2457D6"
+                    app:strokeColor="#D9E0EC"
+                    app:strokeWidth="1dp" />
+
+            </FrameLayout>
 
         </com.google.android.material.card.MaterialCardView>
 

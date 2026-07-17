@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -40,8 +41,7 @@ import java.util.Locale;
 public class MapFragment extends Fragment
         implements OnMapReadyCallback {
 
-    private static final float NEARBY_DISTANCE_METERS =
-            10_000f;
+    private static final float NEARBY_DISTANCE_METERS = 10_000f;
 
     private FragmentMapBinding binding;
 
@@ -55,16 +55,16 @@ public class MapFragment extends Fragment
     /*
      * Location selected for a new report.
      *
-     * This may be the user's GPS location or a manually
-     * selected point on the map.
+     * This can be the user's GPS location or a point
+     * selected manually on the map.
      */
     private LatLng selectedLatLng;
 
     /*
      * Actual GPS location of the device.
      *
-     * Nearby hazards must be calculated from this location,
-     * not from a manually selected report location.
+     * Nearby hazard distance is calculated from this
+     * location only.
      */
     private LatLng currentDeviceLatLng;
 
@@ -73,13 +73,13 @@ public class MapFragment extends Fragment
     private boolean isLocationManuallySelected = false;
 
     /*
-     * All reports retrieved from Firestore.
+     * All hazard reports loaded from Firestore.
      */
     private final List<HazardReport> allHazards =
             new ArrayList<>();
 
     /*
-     * Reports located within 10 km of the user's GPS.
+     * Hazard reports located within 10 kilometres.
      */
     private final List<HazardReport> nearbyHazards =
             new ArrayList<>();
@@ -102,8 +102,8 @@ public class MapFragment extends Fragment
                             moveToDefaultLocation();
 
                             /*
-                             * Markers can still be displayed,
-                             * but a nearby calculation cannot be made.
+                             * Hazards can still be displayed,
+                             * but distance cannot be calculated.
                              */
                             loadHazardsFromFirestore();
                         }
@@ -144,7 +144,6 @@ public class MapFragment extends Fragment
         initialiseLocationClient();
         setupNearbyRecyclerView();
         initialiseMap();
-
         setupClickListeners();
         loadUserProfile();
     }
@@ -185,10 +184,7 @@ public class MapFragment extends Fragment
         nearbyHazardAdapter =
                 new NearbyHazardAdapter(
                         nearbyHazards,
-                        hazardReport ->
-                                showHazardInformation(
-                                        hazardReport
-                                )
+                        this::showHazardInformation
                 );
 
         binding.recyclerNearbyHazards.setLayoutManager(
@@ -218,80 +214,15 @@ public class MapFragment extends Fragment
         binding.btnGoToReport.setOnClickListener(
                 view -> openReportPage()
         );
-    }
-
-    private void refreshCurrentLocation() {
-        if (!isAdded()) {
-            return;
-        }
-
-        int permissionStatus =
-                ContextCompat.checkSelfPermission(
-                        requireContext(),
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                );
-
-        if (
-                permissionStatus ==
-                        PackageManager.PERMISSION_GRANTED
-        ) {
-            updateGpsStatusLoading();
-            getDeviceLocation();
-
-        } else {
-            locationPermissionLauncher.launch(
-                    Manifest.permission.ACCESS_FINE_LOCATION
-            );
-        }
-    }
-
-    private void openReportPage() {
-        if (selectedLatLng == null) {
-            Toast.makeText(
-                    requireContext(),
-                    "Please wait for GPS or tap the map to select a location.",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-            return;
-        }
-
-        Bundle arguments = new Bundle();
-
-        arguments.putString(
-                "selected_coordinates",
-                createCoordinateString(
-                        selectedLatLng
-                )
-        );
-
-        arguments.putDouble(
-                "selected_latitude",
-                selectedLatLng.latitude
-        );
-
-        arguments.putDouble(
-                "selected_longitude",
-                selectedLatLng.longitude
-        );
-
-        ReportFragment reportFragment =
-                new ReportFragment();
-
-        reportFragment.setArguments(
-                arguments
-        );
 
         /*
-         * Let MainActivity control navigation.
-         * This keeps the bottom navigation synchronized.
+         * This button must exist in fragment_map.xml:
+         *
+         * android:id="@+id/btnMapType"
          */
-        if (requireActivity() instanceof MainActivity) {
-            ((MainActivity) requireActivity())
-                    .openReportFragment(
-                            reportFragment
-                    );
-        }
+        binding.btnMapType.setOnClickListener(
+                this::showMapTypeMenu
+        );
     }
 
     @Override
@@ -311,12 +242,18 @@ public class MapFragment extends Fragment
             return;
         }
 
+        /*
+         * Default map style.
+         */
         mMap.setMapType(
                 GoogleMap.MAP_TYPE_NORMAL
         );
 
+        /*
+         * Enable Google Maps controls and gestures.
+         */
         mMap.getUiSettings()
-                .setZoomControlsEnabled(false);
+                .setZoomControlsEnabled(true);
 
         mMap.getUiSettings()
                 .setCompassEnabled(true);
@@ -326,6 +263,143 @@ public class MapFragment extends Fragment
 
         mMap.getUiSettings()
                 .setMyLocationButtonEnabled(true);
+
+        mMap.getUiSettings()
+                .setZoomGesturesEnabled(true);
+
+        mMap.getUiSettings()
+                .setScrollGesturesEnabled(true);
+
+        mMap.getUiSettings()
+                .setRotateGesturesEnabled(true);
+
+        mMap.getUiSettings()
+                .setTiltGesturesEnabled(true);
+
+        /*
+         * Prevent the map from moving to its maximum
+         * or minimum zoom level.
+         */
+        mMap.setMinZoomPreference(3f);
+        mMap.setMaxZoomPreference(21f);
+    }
+
+    private void showMapTypeMenu(
+            @NonNull View anchorView
+    ) {
+        if (mMap == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Map is not ready yet.",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            return;
+        }
+
+        PopupMenu popupMenu =
+                new PopupMenu(
+                        requireContext(),
+                        anchorView
+                );
+
+        popupMenu.getMenu().add(
+                0,
+                GoogleMap.MAP_TYPE_NORMAL,
+                0,
+                "Normal"
+        );
+
+        popupMenu.getMenu().add(
+                0,
+                GoogleMap.MAP_TYPE_SATELLITE,
+                1,
+                "Satellite"
+        );
+
+        popupMenu.getMenu().add(
+                0,
+                GoogleMap.MAP_TYPE_HYBRID,
+                2,
+                "Hybrid"
+        );
+
+        popupMenu.getMenu().add(
+                0,
+                GoogleMap.MAP_TYPE_TERRAIN,
+                3,
+                "Terrain"
+        );
+
+        popupMenu.setOnMenuItemClickListener(item -> {
+
+            int selectedMapType =
+                    item.getItemId();
+
+            if (
+                    selectedMapType ==
+                            GoogleMap.MAP_TYPE_NORMAL
+            ) {
+                mMap.setMapType(
+                        GoogleMap.MAP_TYPE_NORMAL
+                );
+
+                binding.btnMapType.setText(
+                        "Normal"
+                );
+
+                return true;
+            }
+
+            if (
+                    selectedMapType ==
+                            GoogleMap.MAP_TYPE_SATELLITE
+            ) {
+                mMap.setMapType(
+                        GoogleMap.MAP_TYPE_SATELLITE
+                );
+
+                binding.btnMapType.setText(
+                        "Satellite"
+                );
+
+                return true;
+            }
+
+            if (
+                    selectedMapType ==
+                            GoogleMap.MAP_TYPE_HYBRID
+            ) {
+                mMap.setMapType(
+                        GoogleMap.MAP_TYPE_HYBRID
+                );
+
+                binding.btnMapType.setText(
+                        "Hybrid"
+                );
+
+                return true;
+            }
+
+            if (
+                    selectedMapType ==
+                            GoogleMap.MAP_TYPE_TERRAIN
+            ) {
+                mMap.setMapType(
+                        GoogleMap.MAP_TYPE_TERRAIN
+                );
+
+                binding.btnMapType.setText(
+                        "Terrain"
+                );
+
+                return true;
+            }
+
+            return false;
+        });
+
+        popupMenu.show();
     }
 
     private void setupMapClickListener() {
@@ -377,8 +451,38 @@ public class MapFragment extends Fragment
                 return true;
             }
 
-            return false;
+            /*
+             * Show the normal marker information window
+             * for the manually selected location.
+             */
+            marker.showInfoWindow();
+
+            return true;
         });
+    }
+
+    private void refreshCurrentLocation() {
+        if (!isAdded()) {
+            return;
+        }
+
+        int permissionStatus =
+                ContextCompat.checkSelfPermission(
+                        requireContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                );
+
+        if (
+                permissionStatus ==
+                        PackageManager.PERMISSION_GRANTED
+        ) {
+            updateGpsStatusLoading();
+            getDeviceLocation();
+        } else {
+            locationPermissionLauncher.launch(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+            );
+        }
     }
 
     private void checkLocationPermission() {
@@ -393,7 +497,6 @@ public class MapFragment extends Fragment
                         PackageManager.PERMISSION_GRANTED
         ) {
             enableLocationAndMoveCamera();
-
         } else {
             updateGpsStatus(false);
 
@@ -480,6 +583,7 @@ public class MapFragment extends Fragment
                         moveToDefaultLocation();
 
                         loadHazardsFromFirestore();
+
                         return;
                     }
 
@@ -490,10 +594,8 @@ public class MapFragment extends Fragment
                             );
 
                     /*
-                     * Use GPS location as the initial report location.
-                     *
-                     * Do not overwrite a manually selected map location
-                     * when the user only presses Refresh.
+                     * Use GPS as the report location until
+                     * the user selects another point manually.
                      */
                     if (!isLocationManuallySelected) {
                         selectedLatLng =
@@ -509,14 +611,10 @@ public class MapFragment extends Fragment
                     mMap.animateCamera(
                             CameraUpdateFactory.newLatLngZoom(
                                     currentDeviceLatLng,
-                                    15f
+                                    18f
                             )
                     );
 
-                    /*
-                     * Load reports only after GPS is available,
-                     * so nearby distance can be calculated.
-                     */
                     loadHazardsFromFirestore();
                 })
                 .addOnFailureListener(exception -> {
@@ -536,6 +634,51 @@ public class MapFragment extends Fragment
 
                     loadHazardsFromFirestore();
                 });
+    }
+
+    private void openReportPage() {
+        if (selectedLatLng == null) {
+            Toast.makeText(
+                    requireContext(),
+                    "Please wait for GPS or tap the map to select a location.",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            return;
+        }
+
+        Bundle arguments = new Bundle();
+
+        arguments.putString(
+                "selected_coordinates",
+                createCoordinateString(
+                        selectedLatLng
+                )
+        );
+
+        arguments.putDouble(
+                "selected_latitude",
+                selectedLatLng.latitude
+        );
+
+        arguments.putDouble(
+                "selected_longitude",
+                selectedLatLng.longitude
+        );
+
+        ReportFragment reportFragment =
+                new ReportFragment();
+
+        reportFragment.setArguments(
+                arguments
+        );
+
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity())
+                    .openReportFragment(
+                            reportFragment
+                    );
+        }
     }
 
     private void loadUserProfile() {
@@ -612,7 +755,8 @@ public class MapFragment extends Fragment
                         !googleName.trim().isEmpty()
         ) {
             binding.tvWelcome.setText(
-                    "Welcome, " + googleName
+                    "Welcome, " +
+                            googleName
             );
         } else {
             binding.tvWelcome.setText(
@@ -647,10 +791,12 @@ public class MapFragment extends Fragment
                     nearbyHazards.clear();
 
                     mMap.clear();
+
                     userSelectedMarker = null;
 
                     /*
-                     * Restore manually selected report marker.
+                     * Restore the manually selected marker
+                     * after clearing the map.
                      */
                     if (
                             selectedLatLng != null &&
@@ -699,10 +845,6 @@ public class MapFragment extends Fragment
                                             HazardReport.class
                                     );
 
-                            if (report == null) {
-                                continue;
-                            }
-
                             report.setId(
                                     document.getId()
                             );
@@ -747,10 +889,6 @@ public class MapFragment extends Fragment
                             }
 
                         } catch (Exception exception) {
-                            /*
-                             * Skip malformed Firestore documents
-                             * without failing the entire page.
-                             */
                             exception.printStackTrace();
                         }
                     }
@@ -871,10 +1009,7 @@ public class MapFragment extends Fragment
                 nearbyHazards.size();
 
         binding.tvHazardCount.setText(
-                nearbyCount +
-                        (nearbyCount == 1
-                                ? " nearby"
-                                : " nearby")
+                nearbyCount + " nearby"
         );
 
         if (currentDeviceLatLng == null) {
@@ -905,7 +1040,6 @@ public class MapFragment extends Fragment
             binding.tvNoHazards.setText(
                     "No nearby hazards found"
             );
-
         } else {
             binding.cardNoHazards.setVisibility(
                     View.GONE
@@ -975,9 +1109,23 @@ public class MapFragment extends Fragment
             status = "New";
         }
 
-        float distanceKm =
-                report.getDistanceMeters() /
-                        1000f;
+        String distanceText;
+
+        if (currentDeviceLatLng == null) {
+            distanceText =
+                    "GPS unavailable";
+        } else {
+            float distanceKm =
+                    report.getDistanceMeters() /
+                            1000f;
+
+            distanceText =
+                    String.format(
+                            Locale.US,
+                            "%.2f km",
+                            distanceKm
+                    );
+        }
 
         String message =
                 "Status: " +
@@ -989,11 +1137,7 @@ public class MapFragment extends Fragment
                         "\n\n" +
 
                         "Distance: " +
-                        String.format(
-                                Locale.US,
-                                "%.2f km",
-                                distanceKm
-                        ) +
+                        distanceText +
                         "\n\n" +
 
                         "Coordinates:\n" +
@@ -1017,6 +1161,10 @@ public class MapFragment extends Fragment
                 .setPositiveButton(
                         "View on Map",
                         (dialog, which) -> {
+
+                            if (mMap == null) {
+                                return;
+                            }
 
                             LatLng hazardLocation =
                                     new LatLng(
@@ -1054,9 +1202,7 @@ public class MapFragment extends Fragment
                 return Double.parseDouble(
                         ((String) value).trim()
                 );
-            } catch (
-                    NumberFormatException ignored
-            ) {
+            } catch (NumberFormatException ignored) {
                 return null;
             }
         }
@@ -1181,10 +1327,6 @@ public class MapFragment extends Fragment
 
         currentDeviceLatLng = null;
 
-        /*
-         * Do not treat Kuala Lumpur as the real
-         * report or nearby-hazard location.
-         */
         if (!isLocationManuallySelected) {
             selectedLatLng = null;
         }

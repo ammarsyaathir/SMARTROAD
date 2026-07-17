@@ -2,10 +2,13 @@ package com.example.smartroadsystem;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,10 +32,8 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageMetadata;
-import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -43,13 +44,30 @@ import java.util.regex.Pattern;
 
 public class ReportFragment extends Fragment {
 
+    /*
+     * Maximum image dimension after resizing.
+     *
+     * The original camera image may be 3000–5000 pixels.
+     * Resizing to 1280 pixels keeps it clear enough for evidence
+     * while reducing the Firestore document size.
+     */
+    private static final int MAX_IMAGE_DIMENSION = 1280;
+
+    /*
+     * Maximum compressed JPEG size before Base64 conversion.
+     *
+     * Base64 increases the data size by approximately 33%.
+     * Keeping JPEG data below about 650 KB provides space for
+     * the remaining Firestore fields.
+     */
+    private static final int MAX_IMAGE_BYTES = 650 * 1024;
+
     private FragmentReportBinding binding;
 
     private FusedLocationProviderClient fusedLocationClient;
 
     private FirebaseFirestore firestore;
     private FirebaseAuth firebaseAuth;
-    private FirebaseStorage firebaseStorage;
 
     private Uri capturedImageUri;
     private File capturedImageFile;
@@ -63,8 +81,12 @@ public class ReportFragment extends Fragment {
     private boolean isSubmitting = false;
 
     /*
-     * TakePicture saves a full-resolution image into the Uri supplied
-     * through cameraLauncher.launch(capturedImageUri).
+     * TakePicture saves a full-resolution image into capturedImageUri.
+     *
+     * This is clearer than using:
+     * extras.get("data")
+     *
+     * because extras.get("data") normally returns only a small thumbnail.
      */
     private final ActivityResultLauncher<Uri> cameraLauncher =
             registerForActivityResult(
@@ -81,7 +103,17 @@ public class ReportFragment extends Fragment {
                             return;
                         }
 
-                        if (binding == null) {
+                        if (
+                                capturedImageFile == null ||
+                                        !capturedImageFile.exists() ||
+                                        capturedImageFile.length() == 0
+                        ) {
+                            deleteUnusedTemporaryImage();
+
+                            showToast(
+                                    "The captured picture is unavailable."
+                            );
+
                             return;
                         }
 
@@ -99,12 +131,11 @@ public class ReportFragment extends Fragment {
             ViewGroup container,
             Bundle savedInstanceState
     ) {
-        binding =
-                FragmentReportBinding.inflate(
-                        inflater,
-                        container,
-                        false
-                );
+        binding = FragmentReportBinding.inflate(
+                inflater,
+                container,
+                false
+        );
 
         return binding.getRoot();
     }
@@ -127,14 +158,8 @@ public class ReportFragment extends Fragment {
     }
 
     private void initialiseServices() {
-        firebaseAuth =
-                FirebaseAuth.getInstance();
-
-        firestore =
-                FirebaseFirestore.getInstance();
-
-        firebaseStorage =
-                FirebaseStorage.getInstance();
+        firebaseAuth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
 
         fusedLocationClient =
                 LocationServices.getFusedLocationProviderClient(
@@ -161,28 +186,21 @@ public class ReportFragment extends Fragment {
                         issueTypes
                 );
 
-        binding.spinnerIssueType.setAdapter(
-                adapter
-        );
+        binding.spinnerIssueType.setAdapter(adapter);
 
         /*
-         * Prevent manual typing.
-         * Users select an item from the dropdown.
+         * Prevent users from typing an unsupported hazard type.
          */
-        binding.spinnerIssueType.setKeyListener(
-                null
-        );
+        binding.spinnerIssueType.setKeyListener(null);
 
         binding.spinnerIssueType.setOnClickListener(
                 view ->
-                        binding.spinnerIssueType
-                                .showDropDown()
+                        binding.spinnerIssueType.showDropDown()
         );
 
         binding.spinnerIssueType.setOnItemClickListener(
                 (parent, selectedView, position, id) ->
-                        binding.layoutIssueType
-                                .setError(null)
+                        binding.layoutIssueType.setError(null)
         );
     }
 
@@ -201,21 +219,16 @@ public class ReportFragment extends Fragment {
     }
 
     private void readCoordinates() {
-        Bundle arguments =
-                getArguments();
+        Bundle arguments = getArguments();
 
         if (arguments != null) {
 
             /*
-             * Preferred values sent separately from MapFragment.
+             * Preferred coordinate values sent by MapFragment.
              */
             if (
-                    arguments.containsKey(
-                            "selected_latitude"
-                    ) &&
-                            arguments.containsKey(
-                                    "selected_longitude"
-                            )
+                    arguments.containsKey("selected_latitude") &&
+                            arguments.containsKey("selected_longitude")
             ) {
                 selectedLatitude =
                         arguments.getDouble(
@@ -240,8 +253,7 @@ public class ReportFragment extends Fragment {
             }
 
             /*
-             * Compatibility with older MapFragment code that sends
-             * one coordinate string.
+             * Compatibility with an older MapFragment version.
              */
             if (
                     arguments.containsKey(
@@ -266,7 +278,7 @@ public class ReportFragment extends Fragment {
         }
 
         /*
-         * Report page opened directly from bottom navigation.
+         * The page was opened directly through bottom navigation.
          */
         getDeviceLocation();
     }
@@ -380,9 +392,7 @@ public class ReportFragment extends Fragment {
                 currentCoordinates
         );
 
-        binding.layoutCoordinates.setError(
-                null
-        );
+        binding.layoutCoordinates.setError(null);
     }
 
     private boolean extractCoordinatesFromString(
@@ -459,6 +469,17 @@ public class ReportFragment extends Fragment {
                         isSubmitting
         ) {
             return;
+        }
+
+        /*
+         * Delete the previous temporary image when retaking.
+         */
+        if (
+                capturedImageFile != null &&
+                        capturedImageFile.exists()
+        ) {
+            //noinspection ResultOfMethodCallIgnored
+            capturedImageFile.delete();
         }
 
         try {
@@ -546,18 +567,18 @@ public class ReportFragment extends Fragment {
         );
 
         binding.tvPhotoStatus.setTextColor(
-                Color.parseColor(
-                        "#15803D"
-                )
+                Color.parseColor("#15803D")
         );
 
+        /*
+         * Glide displays the full-resolution file efficiently
+         * without loading the full Bitmap into the ImageView manually.
+         */
         Glide.with(this)
                 .load(capturedImageUri)
                 .dontAnimate()
                 .centerCrop()
-                .into(
-                        binding.ivReportImage
-                );
+                .into(binding.ivReportImage);
     }
 
     private void validateAndSubmitReport() {
@@ -628,7 +649,7 @@ public class ReportFragment extends Fragment {
                 capturedImageUri == null ||
                         capturedImageFile == null ||
                         !capturedImageFile.exists() ||
-                        capturedImageFile.length() == 0
+                        capturedImageFile.length() <= 0
         ) {
             showToast(
                     "Please capture a clear picture of the hazard."
@@ -648,17 +669,9 @@ public class ReportFragment extends Fragment {
     }
 
     private void clearInputErrors() {
-        binding.layoutIssueType.setError(
-                null
-        );
-
-        binding.layoutDescription.setError(
-                null
-        );
-
-        binding.layoutCoordinates.setError(
-                null
-        );
+        binding.layoutIssueType.setError(null);
+        binding.layoutDescription.setError(null);
+        binding.layoutCoordinates.setError(null);
     }
 
     private void prepareReportSubmission(
@@ -676,10 +689,55 @@ public class ReportFragment extends Fragment {
             return;
         }
 
-        setSubmittingState(
-                true
-        );
+        setSubmittingState(true);
 
+        /*
+         * Process the image on a worker thread because decoding and
+         * compressing a full-resolution photo may take time.
+         */
+        new Thread(() -> {
+
+            String base64Image =
+                    createOptimisedBase64Image();
+
+            requireActivity().runOnUiThread(() -> {
+
+                if (
+                        binding == null ||
+                                !isAdded()
+                ) {
+                    return;
+                }
+
+                if (
+                        base64Image == null ||
+                                base64Image.trim().isEmpty()
+                ) {
+                    setSubmittingState(false);
+
+                    showToast(
+                            "Unable to process the captured picture."
+                    );
+
+                    return;
+                }
+
+                loadUserAndSaveReport(
+                        currentUser,
+                        hazardType,
+                        description,
+                        base64Image
+                );
+            });
+        }).start();
+    }
+
+    private void loadUserAndSaveReport(
+            @NonNull FirebaseUser currentUser,
+            @NonNull String hazardType,
+            @NonNull String description,
+            @NonNull String base64Image
+    ) {
         String userId =
                 currentUser.getUid();
 
@@ -710,11 +768,12 @@ public class ReportFragment extends Fragment {
                         reportedBy = "SmartRoad User";
                     }
 
-                    uploadReportImage(
+                    saveReportToFirestore(
                             userId,
                             reportedBy,
                             hazardType,
-                            description
+                            description,
+                            base64Image
                     );
                 })
                 .addOnFailureListener(exception -> {
@@ -729,109 +788,258 @@ public class ReportFragment extends Fragment {
                         reportedBy = "SmartRoad User";
                     }
 
-                    uploadReportImage(
+                    saveReportToFirestore(
                             userId,
                             reportedBy,
                             hazardType,
-                            description
+                            description,
+                            base64Image
                     );
                 });
     }
 
-    private void uploadReportImage(
-            @NonNull String userId,
-            @NonNull String reportedBy,
-            @NonNull String hazardType,
-            @NonNull String description
-    ) {
+    /**
+     * Decodes, resizes and compresses the full-resolution camera image.
+     */
+    @Nullable
+    private String createOptimisedBase64Image() {
         if (
-                capturedImageUri == null ||
-                        capturedImageFile == null ||
+                capturedImageFile == null ||
                         !capturedImageFile.exists()
         ) {
-            setSubmittingState(
-                    false
-            );
-
-            showToast(
-                    "The captured photo is unavailable."
-            );
-
-            return;
+            return null;
         }
 
-        String fileName =
-                "hazard_" +
-                        System.currentTimeMillis() +
-                        ".jpg";
+        Bitmap decodedBitmap = null;
+        Bitmap resizedBitmap = null;
 
-        StorageReference imageReference =
-                firebaseStorage
-                        .getReference()
-                        .child("report_images")
-                        .child(userId)
-                        .child(fileName);
+        try {
+            BitmapFactory.Options boundsOptions =
+                    new BitmapFactory.Options();
 
-        StorageMetadata metadata =
-                new StorageMetadata.Builder()
-                        .setContentType(
-                                "image/jpeg"
-                        )
-                        .setCustomMetadata(
-                                "uploadedBy",
-                                userId
-                        )
-                        .build();
+            boundsOptions.inJustDecodeBounds = true;
 
-        imageReference
-                .putFile(
-                        capturedImageUri,
-                        metadata
-                )
-                .continueWithTask(task -> {
+            BitmapFactory.decodeFile(
+                    capturedImageFile.getAbsolutePath(),
+                    boundsOptions
+            );
 
-                    if (!task.isSuccessful()) {
-                        Exception exception =
-                                task.getException();
+            int originalWidth =
+                    boundsOptions.outWidth;
 
-                        if (exception != null) {
-                            throw exception;
-                        }
-                    }
+            int originalHeight =
+                    boundsOptions.outHeight;
 
-                    return imageReference
-                            .getDownloadUrl();
-                })
-                .addOnSuccessListener(downloadUri ->
+            if (
+                    originalWidth <= 0 ||
+                            originalHeight <= 0
+            ) {
+                return null;
+            }
 
-                        saveReportToFirestore(
-                                userId,
-                                reportedBy,
-                                hazardType,
-                                description,
-                                downloadUri.toString()
-                        )
-                )
-                .addOnFailureListener(exception -> {
+            BitmapFactory.Options decodeOptions =
+                    new BitmapFactory.Options();
 
-                    if (
-                            binding == null ||
-                                    !isAdded()
-                    ) {
-                        return;
-                    }
-
-                    setSubmittingState(
-                            false
+            decodeOptions.inSampleSize =
+                    calculateInSampleSize(
+                            originalWidth,
+                            originalHeight,
+                            MAX_IMAGE_DIMENSION,
+                            MAX_IMAGE_DIMENSION
                     );
 
-                    Toast.makeText(
-                            requireContext(),
-                            "Unable to upload hazard image: " +
-                                    exception.getMessage(),
-                            Toast.LENGTH_LONG
-                    ).show();
-                });
+            decodeOptions.inPreferredConfig =
+                    Bitmap.Config.ARGB_8888;
+
+            decodedBitmap =
+                    BitmapFactory.decodeFile(
+                            capturedImageFile.getAbsolutePath(),
+                            decodeOptions
+                    );
+
+            if (decodedBitmap == null) {
+                return null;
+            }
+
+            resizedBitmap =
+                    resizeBitmapKeepingAspectRatio(
+                            decodedBitmap,
+                            MAX_IMAGE_DIMENSION
+                    );
+
+            if (resizedBitmap == null) {
+                return null;
+            }
+
+            byte[] compressedBytes =
+                    compressBitmapWithinLimit(
+                            resizedBitmap
+                    );
+
+            if (
+                    compressedBytes == null ||
+                            compressedBytes.length == 0
+            ) {
+                return null;
+            }
+
+            return Base64.encodeToString(
+                    compressedBytes,
+                    Base64.NO_WRAP
+            );
+
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return null;
+
+        } finally {
+            if (
+                    resizedBitmap != null &&
+                            resizedBitmap != decodedBitmap &&
+                            !resizedBitmap.isRecycled()
+            ) {
+                resizedBitmap.recycle();
+            }
+
+            if (
+                    decodedBitmap != null &&
+                            !decodedBitmap.isRecycled()
+            ) {
+                decodedBitmap.recycle();
+            }
+        }
+    }
+
+    private int calculateInSampleSize(
+            int originalWidth,
+            int originalHeight,
+            int requestedWidth,
+            int requestedHeight
+    ) {
+        int sampleSize = 1;
+
+        if (
+                originalHeight > requestedHeight ||
+                        originalWidth > requestedWidth
+        ) {
+            int halfHeight =
+                    originalHeight / 2;
+
+            int halfWidth =
+                    originalWidth / 2;
+
+            while (
+                    halfHeight / sampleSize >= requestedHeight &&
+                            halfWidth / sampleSize >= requestedWidth
+            ) {
+                sampleSize *= 2;
+            }
+        }
+
+        return Math.max(
+                sampleSize,
+                1
+        );
+    }
+
+    @Nullable
+    private Bitmap resizeBitmapKeepingAspectRatio(
+            @NonNull Bitmap sourceBitmap,
+            int maximumDimension
+    ) {
+        int originalWidth =
+                sourceBitmap.getWidth();
+
+        int originalHeight =
+                sourceBitmap.getHeight();
+
+        if (
+                originalWidth <= maximumDimension &&
+                        originalHeight <= maximumDimension
+        ) {
+            return sourceBitmap;
+        }
+
+        float scaleRatio =
+                Math.min(
+                        (float) maximumDimension /
+                                originalWidth,
+                        (float) maximumDimension /
+                                originalHeight
+                );
+
+        int resizedWidth =
+                Math.round(
+                        originalWidth *
+                                scaleRatio
+                );
+
+        int resizedHeight =
+                Math.round(
+                        originalHeight *
+                                scaleRatio
+                );
+
+        return Bitmap.createScaledBitmap(
+                sourceBitmap,
+                resizedWidth,
+                resizedHeight,
+                true
+        );
+    }
+
+    /**
+     * Starts with good JPEG quality and gradually reduces it only
+     * when needed to remain below the Firestore-safe target.
+     */
+    @Nullable
+    private byte[] compressBitmapWithinLimit(
+            @NonNull Bitmap bitmap
+    ) {
+        int jpegQuality = 82;
+
+        byte[] compressedBytes = null;
+
+        while (jpegQuality >= 50) {
+            ByteArrayOutputStream outputStream =
+                    new ByteArrayOutputStream();
+
+            boolean successful =
+                    bitmap.compress(
+                            Bitmap.CompressFormat.JPEG,
+                            jpegQuality,
+                            outputStream
+                    );
+
+            if (!successful) {
+                return null;
+            }
+
+            compressedBytes =
+                    outputStream.toByteArray();
+
+            if (
+                    compressedBytes.length <=
+                            MAX_IMAGE_BYTES
+            ) {
+                return compressedBytes;
+            }
+
+            jpegQuality -= 7;
+        }
+
+        /*
+         * Return the smallest result if it is reasonably close.
+         */
+        if (
+                compressedBytes != null &&
+                        compressedBytes.length <=
+                                750 * 1024
+        ) {
+            return compressedBytes;
+        }
+
+        return null;
     }
 
     private void saveReportToFirestore(
@@ -839,7 +1047,7 @@ public class ReportFragment extends Fragment {
             @NonNull String reportedBy,
             @NonNull String hazardType,
             @NonNull String description,
-            @NonNull String imageUrl
+            @NonNull String base64Image
     ) {
         Timestamp currentTimestamp =
                 Timestamp.now();
@@ -858,11 +1066,14 @@ public class ReportFragment extends Fragment {
         );
 
         /*
-         * Firebase Storage download URL.
+         * Store the optimised image as a Base64 data URI.
+         *
+         * This remains compatible with the existing web admin system.
          */
         report.put(
                 "imageUrl",
-                imageUrl
+                "data:image/jpeg;base64," +
+                        base64Image
         );
 
         report.put(
@@ -921,9 +1132,7 @@ public class ReportFragment extends Fragment {
                         return;
                     }
 
-                    setSubmittingState(
-                            false
-                    );
+                    setSubmittingState(false);
 
                     Toast.makeText(
                             requireContext(),
@@ -943,16 +1152,31 @@ public class ReportFragment extends Fragment {
                         return;
                     }
 
-                    setSubmittingState(
-                            false
-                    );
+                    setSubmittingState(false);
 
-                    Toast.makeText(
-                            requireContext(),
-                            "The photo was uploaded, but the report could not be saved: " +
-                                    exception.getMessage(),
-                            Toast.LENGTH_LONG
-                    ).show();
+                    String errorMessage =
+                            exception.getMessage();
+
+                    if (
+                            errorMessage != null &&
+                                    errorMessage.toLowerCase(
+                                            Locale.ROOT
+                                    ).contains("too large")
+                    ) {
+                        Toast.makeText(
+                                requireContext(),
+                                "The picture is still too large. Please capture another photo.",
+                                Toast.LENGTH_LONG
+                        ).show();
+
+                    } else {
+                        Toast.makeText(
+                                requireContext(),
+                                "Submission failed: " +
+                                        errorMessage,
+                                Toast.LENGTH_LONG
+                        ).show();
+                    }
                 });
     }
 
@@ -993,7 +1217,7 @@ public class ReportFragment extends Fragment {
 
         binding.btnSubmitReport.setText(
                 submitting
-                        ? "Uploading and Submitting..."
+                        ? "Processing and Submitting..."
                         : "Submit Road Hazard Report"
         );
     }
@@ -1008,14 +1232,14 @@ public class ReportFragment extends Fragment {
                 false
         );
 
-        binding.etDescription.setText(
-                ""
-        );
+        binding.etDescription.setText("");
 
         resetPhotoUi();
 
-        capturedImageUri = null;
-        capturedImageFile = null;
+        /*
+         * Delete the local temporary image after successful submission.
+         */
+        deleteUnusedTemporaryImage();
     }
 
     private void resetPhotoUi() {
@@ -1023,9 +1247,7 @@ public class ReportFragment extends Fragment {
             return;
         }
 
-        binding.ivReportImage.setImageDrawable(
-                null
-        );
+        binding.ivReportImage.setImageDrawable(null);
 
         binding.ivReportImage.setVisibility(
                 View.GONE
@@ -1048,9 +1270,7 @@ public class ReportFragment extends Fragment {
         );
 
         binding.tvPhotoStatus.setTextColor(
-                Color.parseColor(
-                        "#B45309"
-                )
+                Color.parseColor("#B45309")
         );
     }
 
