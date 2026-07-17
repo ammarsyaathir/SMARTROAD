@@ -50,6 +50,52 @@
         .custom-scroll::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+    
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+        }
+        .map-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+        }
+        /* Compact Google Maps hazard popup */
+        .gm-style .gm-style-iw-c {
+            padding: 0 !important;
+            border-radius: 18px !important;
+            overflow: hidden !important;
+            max-height: none !important;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, .18) !important;
+        }
+        .gm-style .gm-style-iw-d {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            max-height: none !important;
+        }
+        .gm-style .gm-style-iw-ch,
+        .gm-style .gm-style-iw-chr,
+        .gm-style .gm-ui-hover-effect {
+            display: none !important;
+        }
+        .gm-style .gm-style-iw-t,
+        .gm-style .gm-style-iw-tc {
+            padding: 0 !important;
+        }
+        .gm-style .gm-style-iw-tc::after {
+            background: #ffffff !important;
+        }
     </style>
 
     <!-- Global safe-load wrapper to prevent race conditions with module-based script loads -->
@@ -123,6 +169,14 @@
         <h2 class="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-900"><i class="fa-solid fa-map-location-dot text-brand-blue"></i> Geographic Density Mapping Distribution</h2>
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-8">
             <div id="map" class="w-full h-[400px] rounded-lg shadow-inner"></div>
+            <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                <div class="map-legend">
+                    <span class="inline-flex items-center gap-2"><span class="map-legend-dot bg-red-500"></span>New</span>
+                    <span class="inline-flex items-center gap-2"><span class="map-legend-dot bg-amber-500"></span>In Progress</span>
+                    <span class="inline-flex items-center gap-2"><span class="map-legend-dot bg-emerald-500"></span>Resolved</span>
+                </div>
+                <p class="text-xs text-slate-400"><i class="fa-solid fa-location-dot mr-1"></i>Click a hazard pin to view its summary.</p>
+            </div>
         </div>
 
         <!-- Filtering & Search Strip -->
@@ -219,10 +273,13 @@
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Reporter Profile</span>
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 font-bold text-sm flex items-center justify-center" id="detUserInit">U</div>
-                            <div>
-                                <div id="detUser" class="text-sm font-bold text-slate-800">---</div>
-                                <span class="text-[11px] text-slate-400 font-medium">Registered Mobile Member</span>
+                            <div class="relative w-12 h-12 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-sm shrink-0">
+                                <img id="detUserPhoto" src="" alt="Reporter profile" class="absolute inset-0 w-full h-full object-cover hidden" referrerpolicy="no-referrer">
+                                <div id="detUserInit" class="absolute inset-0 text-slate-600 font-bold text-sm flex items-center justify-center">U</div>
+                            </div>
+                            <div class="min-w-0">
+                                <div id="detUser" class="text-sm font-bold text-slate-800 truncate">---</div>
+                                <span id="detUserEmail" class="text-[11px] text-slate-400 font-medium truncate block">Registered Mobile App</span>
                             </div>
                         </div>
                     </div>
@@ -247,10 +304,7 @@
                         <div id="detTimestamp" class="text-sm font-medium text-slate-700">---</div>
                     </div>
 
-                    <div>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Firebase User ID</span>
-                        <div id="detUserId" class="text-[11px] text-slate-500 font-mono bg-slate-100 p-2.5 border border-slate-200 rounded-lg mt-1 break-all">---</div>
-                    </div>
+               
 
                     <div>
                         <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Last Updated</span>
@@ -272,7 +326,7 @@
                         <div id="detDesc" class="text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200 max-h-24 overflow-y-auto leading-relaxed custom-scroll">---</div>
                     </div>
 
-
+                   
                 </div>
             </div>
 
@@ -346,7 +400,7 @@
     <!-- Firestore Streaming Operations Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
   apiKey: "AIzaSyCGpk7V9VhEROYY-O8Ggd4dO71GluBwvaA",
@@ -363,6 +417,7 @@
         let allReports = [];
         let map;
         let activeMarkers = {};
+        let openedInfoWindow = null;
         let pendingAction = null;
         let activeCardFilter = "active";
 
@@ -376,6 +431,15 @@
             map = new google.maps.Map(document.getElementById("map"), {
                 zoom: zoomVal,
                 center: startingCenter,
+                gestureHandling: "greedy"
+            });
+
+            // Close the currently opened hazard summary when any empty map area is clicked.
+            map.addListener("click", () => {
+                if (openedInfoWindow) {
+                    openedInfoWindow.close();
+                    openedInfoWindow = null;
+                }
             });
             
             if (allReports.length > 0) {
@@ -389,59 +453,215 @@
         }
 
         // Plot dynamic markers across the map framework layout matching report properties
-        function updateMapMarkers(dataList) {
-            for (let id in activeMarkers) {
-                activeMarkers[id].marker.setMap(null);
+        function statusTheme(status) {
+            const normalized = String(status || "New").trim().toLowerCase();
+            if (normalized === "resolved") {
+                return { color: "#10b981", pale: "#ecfdf5", text: "#047857", label: "Resolved" };
             }
+            if (normalized === "in progress" || normalized === "under investigation") {
+                return { color: "#f59e0b", pale: "#fffbeb", text: "#b45309", label: "In Progress" };
+            }
+            return { color: "#ef4444", pale: "#fef2f2", text: "#b91c1c", label: "New" };
+        }
+
+        function hazardIconSvg(type) {
+            const normalized = String(type || "").toLowerCase();
+
+            if (normalized.includes("pothole")) {
+                return `
+                    <ellipse cx="28" cy="29" rx="10" ry="6" fill="#111827"/>
+                    <path d="M19 28l5-5 4 4 5-6 5 7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+            }
+            if (normalized.includes("flood")) {
+                return `
+                    <path d="M18 23c3-2 6-2 9 0s6 2 9 0" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>
+                    <path d="M18 29c3-2 6-2 9 0s6 2 9 0" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>
+                    <path d="M18 35c3-2 6-2 9 0s6 2 9 0" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-linecap="round"/>`;
+            }
+            if (normalized.includes("accident")) {
+                return `
+                    <path d="M18 32h20l-2.5-9H21z" fill="#ef4444" stroke="#111827" stroke-width="1.7" stroke-linejoin="round"/>
+                    <circle cx="23" cy="34" r="2.4" fill="#111827"/>
+                    <circle cx="33" cy="34" r="2.4" fill="#111827"/>
+                    <path d="M28 16v5M25 18.5h6" stroke="#facc15" stroke-width="2.2" stroke-linecap="round"/>`;
+            }
+            if (normalized.includes("fallen tree") || normalized.includes("tree")) {
+                return `
+                    <path d="M20 34l16-14" stroke="#92400e" stroke-width="4.5" stroke-linecap="round"/>
+                    <circle cx="20" cy="34" r="5.5" fill="#16a34a"/>
+                    <circle cx="28" cy="27" r="5.5" fill="#22c55e"/>
+                    <circle cx="36" cy="20" r="5.5" fill="#16a34a"/>`;
+            }
+            if (normalized.includes("traffic light") || normalized.includes("traffic")) {
+                return `
+                    <rect x="21" y="15" width="14" height="27" rx="3.5" fill="#111827"/>
+                    <circle cx="28" cy="22" r="3.3" fill="#ef4444"/>
+                    <circle cx="28" cy="29" r="3.3" fill="#facc15"/>
+                    <circle cx="28" cy="36" r="3.3" fill="#22c55e"/>`;
+            }
+            if (normalized.includes("road sign") || normalized.includes("sign")) {
+                return `
+                    <path d="M28 15l11 11-11 11-11-11z" fill="#facc15" stroke="#111827" stroke-width="2"/>
+                    <path d="M28 37v7" stroke="#111827" stroke-width="2.4" stroke-linecap="round"/>
+                    <path d="M24.5 26h7" stroke="#111827" stroke-width="2.2" stroke-linecap="round"/>`;
+            }
+            if (normalized.includes("landslide")) {
+                return `
+                    <path d="M17 38l11-21 11 21z" fill="#a16207" stroke="#111827" stroke-width="1.8" stroke-linejoin="round"/>
+                    <circle cx="32" cy="25" r="2.3" fill="#f8fafc"/>
+                    <circle cx="26" cy="31" r="2.7" fill="#f8fafc"/>
+                    <circle cx="34" cy="34" r="2" fill="#f8fafc"/>`;
+            }
+            return `
+                <path d="M28 16 39 37H17Z" fill="#facc15" stroke="#111827" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M28 23v7" stroke="#111827" stroke-width="2.6" stroke-linecap="round"/>
+                <circle cx="28" cy="34" r="1.7" fill="#111827"/>`;
+        }
+
+        function markerSvg(report) {
+            const theme = statusTheme(report.status);
+            const priority = getPriority(report).label;
+            const ring = priority === "CRITICAL" ? "#7f1d1d"
+                : priority === "HIGH" ? "#c2410c"
+                : priority === "MEDIUM" ? "#d97706"
+                : "#047857";
+            const hazardGraphic = hazardIconSvg(report.hazardType);
+
+            // Extra SVG padding prevents the pin, icon and shadow from being cropped.
+            const svg = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="78" viewBox="0 0 64 78">
+                <defs>
+                  <filter id="s" x="-35%" y="-25%" width="170%" height="180%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#0f172a" flood-opacity=".30"/>
+                  </filter>
+                </defs>
+                <g filter="url(#s)" transform="translate(4 3)">
+                  <path d="M28 1C13.1 1 1 13.1 1 28c0 19.5 27 41 27 41s27-21.5 27-41C55 13.1 42.9 1 28 1Z"
+                    fill="${theme.color}" stroke="#ffffff" stroke-width="3.5"/>
+                  <circle cx="28" cy="28" r="16" fill="#ffffff" stroke="${ring}" stroke-width="3"/>
+                  ${hazardGraphic}
+                </g>
+              </svg>`;
+            return {
+                url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+                scaledSize: new google.maps.Size(48, 59),
+                anchor: new google.maps.Point(24, 56)
+            };
+        }
+
+        function safeMapText(value) {
+            return String(value ?? "").replace(/[&<>'"]/g, character => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+            })[character]);
+        }
+
+        function updateMapMarkers(dataList) {
+            if (openedInfoWindow) {
+                openedInfoWindow.close();
+                openedInfoWindow = null;
+            }
+
+            Object.values(activeMarkers).forEach(item => item.marker.setMap(null));
             activeMarkers = {};
 
-            if (dataList.length === 0 || !map) return;
+            if (!map || !dataList.length) return;
 
             const bounds = new google.maps.LatLngBounds();
             let validPointsCount = 0;
 
             dataList.forEach(report => {
-                if (report.latitude && report.longitude) {
-                    const lat = parseFloat(report.latitude);
-                    const lng = parseFloat(report.longitude);
-                    let colorCode = report.status === 'New' ? '#ef4444' : (report.status === 'In Progress' ? '#f59e0b' : '#10b981');
+                const lat = Number(report.latitude);
+                const lng = Number(report.longitude);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-                    const marker = new google.maps.Marker({
-                        position: { lat: lat, lng: lng },
-                        map: map,
-                        title: report.hazardType,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            fillColor: colorCode,
-                            fillOpacity: 0.9,
-                            scale: 8,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2,
-                        }
-                    });
+                const theme = statusTheme(report.status);
+                const priority = getPriority(report);
+                const reportId = safeMapText((report.id || "").substring(0, 8).toUpperCase());
+                const hazardType = safeMapText(report.hazardType || "Road Hazard");
+                const reporter = safeMapText(report.reportedBy || "Anonymous User");
+                const description = safeMapText(report.description || "No description provided.");
+                const status = safeMapText(theme.label);
+                const pin = markerSvg(report);
 
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `
-                            <div style="font-family:'Inter',sans-serif; padding:4px;">
-                                <strong style="font-size:13px;color:#0f172a;">${report.hazardType}</strong><br>
-                                <span style="font-size:11px;color:#64748b;">By: ${report.reportedBy || 'User'}</span><br>
-                                <span style="display:inline-block;margin-top:4px;padding:2px 6px;font-size:10px;font-weight:700;border-radius:10px;background:${colorCode}20;color:${colorCode};">${report.status}</span>
+                const marker = new google.maps.Marker({
+                    position: { lat, lng },
+                    map,
+                    title: `${report.hazardType || "Road Hazard"} — ${theme.label}`,
+                    icon: pin,
+                    optimized: false,
+                    zIndex: priority.label === "CRITICAL" ? 500
+                        : priority.label === "HIGH" ? 400
+                        : priority.label === "MEDIUM" ? 300
+                        : 200
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    disableAutoPan: false,
+                    content: `
+                        <div style="width:270px;font-family:Inter,Arial,sans-serif;color:#0f172a;overflow:hidden;background:#fff;">
+                            <div style="background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:12px 14px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                                    <div style="min-width:0;">
+                                        <div style="font-size:10px;font-weight:800;letter-spacing:.13em;color:#93c5fd;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                            Report #${reportId}
+                                        </div>
+                                        <div style="margin-top:3px;font-size:16px;line-height:1.2;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                            ${hazardType}
+                                        </div>
+                                    </div>
+                                    <div style="width:42px;height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:rgba(255,255,255,.16);">
+                                        <img src="${pin.url}" alt="" style="width:31px;height:38px;object-fit:contain;display:block;">
+                                    </div>
+                                </div>
                             </div>
-                        `
-                    });
 
-                    marker.addListener("click", () => {
-                        infoWindow.open(map, marker);
-                    });
+                            <div style="padding:10px 14px 9px;">
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;">
+                                    <span style="background:${theme.pale};color:${theme.text};padding:4px 9px;border-radius:999px;font-size:10px;line-height:1.2;font-weight:800;">${status}</span>
+                                    <span style="background:#f8fafc;border:1px solid #e2e8f0;color:#475569;padding:4px 9px;border-radius:999px;font-size:10px;line-height:1.2;font-weight:800;">${priority.label}</span>
+                                </div>
 
-                    activeMarkers[report.id] = { marker, infoWindow, lat, lng };
-                    bounds.extend(marker.getPosition());
-                    validPointsCount++;
-                }
+                                <p style="margin:0;color:#475569;font-size:12px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${description}</p>
+
+                                <div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <span style="min-width:0;font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                        Reported by <strong style="color:#334155;">${reporter}</strong>
+                                    </span>
+                                    <button type="button" onclick="openDetailsModal('${report.id}')"
+                                        style="flex:0 0 auto;border:0;background:#2563eb;color:#fff;padding:7px 11px;border-radius:8px;font-size:10px;line-height:1;font-weight:800;cursor:pointer;">
+                                        Review
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`
+                });
+
+                marker.addListener("click", event => {
+                    if (event?.domEvent) {
+                        event.domEvent.stopPropagation();
+                    }
+                    if (openedInfoWindow) openedInfoWindow.close();
+                    openedInfoWindow = infoWindow;
+                    infoWindow.open({ map, anchor: marker, shouldFocus: false });
+                });
+
+                infoWindow.addListener("closeclick", () => {
+                    if (openedInfoWindow === infoWindow) openedInfoWindow = null;
+                });
+
+                activeMarkers[report.id] = { marker, infoWindow, lat, lng };
+                bounds.extend({ lat, lng });
+                validPointsCount++;
             });
 
-            if (validPointsCount > 0) {
-                map.fitBounds(bounds);
+            if (validPointsCount === 1) {
+                map.setCenter(bounds.getCenter());
+                map.setZoom(16);
+            } else if (validPointsCount > 1) {
+                map.fitBounds(bounds, 70);
+                google.maps.event.addListenerOnce(map, "idle", () => {
+                    if (map.getZoom() > 15) map.setZoom(15);
+                });
             }
         }
 
@@ -586,14 +806,84 @@
                 const target = activeMarkers[id];
                 map.setCenter({ lat: target.lat, lng: target.lng });
                 map.setZoom(16);
-                target.infoWindow.open(map, target.marker);
+                if (openedInfoWindow) openedInfoWindow.close();
+                openedInfoWindow = target.infoWindow;
+                target.infoWindow.open({ map, anchor: target.marker });
                 
                 document.getElementById("map").scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         };
 
+        function getProfilePhotoValue(user) {
+            if (!user) return "";
+            const keys = [
+                "photoURL", "photoUrl", "profilePhoto", "profilePhotoUrl",
+                "profilePicture", "profilePictureUrl", "profileImage", "profileImageUrl",
+                "avatar", "avatarUrl", "picture", "imageUrl",
+                "photoBase64", "profilePhotoBase64", "profileImageBase64"
+            ];
+            for (const key of keys) {
+                const value = user[key];
+                if (value !== undefined && value !== null && String(value).trim()) {
+                    const raw = String(value).trim();
+                    if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+                    if (/^[A-Za-z0-9+/=\s]+$/.test(raw) && raw.length > 100) {
+                        return `data:image/jpeg;base64,${raw.replace(/\s/g, "")}`;
+                    }
+                    return raw;
+                }
+            }
+            return "";
+        }
+
+        async function renderReporterProfile(report) {
+            const nameElement = document.getElementById("detUser");
+            const emailElement = document.getElementById("detUserEmail");
+            const photoElement = document.getElementById("detUserPhoto");
+            const fallbackElement = document.getElementById("detUserInit");
+
+            const fallbackName = report.reportedBy || "Anonymous User";
+            nameElement.innerText = fallbackName;
+            emailElement.innerText = "Registered Mobile App";
+            fallbackElement.innerText = fallbackName.trim().charAt(0).toUpperCase() || "U";
+            fallbackElement.classList.remove("hidden");
+            photoElement.classList.add("hidden");
+            photoElement.removeAttribute("src");
+
+            const userId = String(report.userId || report.uid || report.userUid || "").trim();
+            if (!userId) return;
+
+            try {
+                const userSnapshot = await getDoc(doc(db, "users", userId));
+                if (!userSnapshot.exists()) return;
+
+                const user = userSnapshot.data();
+                const profileName = user.displayName || user.name || user.fullName || user.realName || fallbackName;
+                const profileEmail = user.email || user.emailAddress || user.userEmail || "Registered Mobile App";
+                const photoUrl = getProfilePhotoValue(user);
+
+                nameElement.innerText = profileName;
+                emailElement.innerText = profileEmail;
+                fallbackElement.innerText = String(profileName).trim().charAt(0).toUpperCase() || "U";
+
+                if (!photoUrl) return;
+
+                photoElement.onload = () => {
+                    photoElement.classList.remove("hidden");
+                    fallbackElement.classList.add("hidden");
+                };
+                photoElement.onerror = () => {
+                    photoElement.classList.add("hidden");
+                    fallbackElement.classList.remove("hidden");
+                };
+                photoElement.src = photoUrl;
+            } catch (error) {
+                console.warn("Unable to load reporter profile:", error);
+            }
+        }
+
         // Deep-Dive Modal Details Controller Mappings
-        window.openDetailsModal = function(id) {
+        window.openDetailsModal = async function(id) {
             const report = allReports.find(r => r.id === id);
             if (!report) return;
 
@@ -606,17 +896,15 @@
             }
 
             document.getElementById("detailsModalTitle").innerHTML = `<i class="fa-solid fa-circle-info text-brand-sky"></i> Statement Log #${report.id.substring(0,6)}`;
-            document.getElementById("detUser").innerText = report.reportedBy || "Anonymous User";
-            
-            const firstChar = (report.reportedBy || "U").trim().charAt(0).toUpperCase();
-            document.getElementById("detUserInit").innerText = firstChar;
+            await renderReporterProfile(report);
 
             document.getElementById("detType").innerText = report.hazardType || "Unclassified Incident";
             const coordinateText = report.coordinates ||
                 `${parseFloat(report.latitude || 0).toFixed(6)}, ${parseFloat(report.longitude || 0).toFixed(6)}`;
             document.getElementById("detCoords").innerText = coordinateText;
             document.getElementById("detTimestamp").innerText = formattedTime;
-            document.getElementById("detUserId").innerText = report.userId || "Not available";
+            const detUserId = document.getElementById("detUserId");
+            if (detUserId) detUserId.innerText = report.userId || "Not available";
 
             let updatedText = "Not updated yet";
             if (report.updatedAt && typeof report.updatedAt.toDate === "function") {
@@ -628,6 +916,11 @@
                 })}`;
             }
             document.getElementById("detUpdatedAt").innerText = updatedText;
+            const detAdminNote = document.getElementById("detAdminNote");
+            const adminNoteCount = document.getElementById("adminNoteCount");
+            if (detAdminNote) detAdminNote.value = report.adminNote || "";
+            if (adminNoteCount) adminNoteCount.innerText = `${(report.adminNote || "").length}/500`;
+            document.getElementById("detDesc").innerText = report.description || "No supplemental details summary statement filed.";
             
             const imgElement = document.getElementById("detImage");
             const imgLink = document.getElementById("detImageLink");
@@ -644,7 +937,10 @@
 
             document.getElementById("detSaveStatusBtn").onclick = function() {
                 const newStatus = statusSelect.value;
+                const adminNoteField = document.getElementById("detAdminNote");
+                const adminNote = adminNoteField ? adminNoteField.value.trim() : (report.adminNote || "");
                 const statusChanged = newStatus !== (report.status || "New");
+                const noteChanged = adminNote !== (report.adminNote || "");
 
                 if (!statusChanged && !noteChanged) {
                     showToast("No review changes were made.", true);
@@ -656,6 +952,7 @@
                     icon: "fa-clipboard-check",
                     iconClass: "text-brand-blue",
                     title: "Confirm Report Review",
+                    message: `Save the administrator review for report #${report.id.substring(0,6)}? The status and note will be visible to the mobile application after it reloads the report.`,
                     confirmText: "Save Review",
                     confirmClass: "bg-brand-blue hover:bg-brand-hover",
                     onConfirm: async () => {
@@ -850,7 +1147,13 @@
         };
 
         applyCardFilter('active');
-
+    
+        const adminNoteField = document.getElementById("detAdminNote");
+        if (adminNoteField) {
+            adminNoteField.addEventListener("input", () => {
+                document.getElementById("adminNoteCount").innerText = `${adminNoteField.value.length}/500`;
+            });
+        }
 </script>
 </body>
 </html>

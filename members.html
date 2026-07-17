@@ -33,7 +33,23 @@
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     .modal-open { overflow: hidden; }
-  </style>
+  
+    .member-modal-card {
+      animation: memberModalIn .22s ease-out;
+    }
+
+    @keyframes memberModalIn {
+      from { opacity: 0; transform: translateY(14px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .profile-ring {
+      box-shadow: 0 0 0 5px #ffffff, 0 0 0 7px #dbeafe, 0 12px 30px rgba(15, 23, 42, .15);
+    }
+
+    .modal-scroll::-webkit-scrollbar { width: 7px; }
+    .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
 
@@ -95,7 +111,7 @@
 
     <section class="bg-white p-4 md:p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
       <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
-        <div class="relative xl:col-span-3">
+        <div class="relative xl:col-span-4">
           <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
           <input id="searchInput" type="text" placeholder="Search by user name or email..." class="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-blue bg-slate-50 focus:bg-white" />
         </div>
@@ -122,8 +138,6 @@
         <div>
           <h2 class="font-semibold text-slate-800">Registered Users</h2>
           <p id="resultCount" class="text-xs text-slate-400 mt-1">0 users displayed</p>
-        </div>
-      </div>
 
       <div class="overflow-x-auto">
         <table class="w-full border-collapse text-left text-sm min-w-[900px]">
@@ -146,17 +160,23 @@
     </section>
   </main>
 
-  <div id="detailsModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-    <div class="min-h-full flex items-center justify-center">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900">User Details</h2>
-            <p class="text-sm text-slate-400">Google profile and reporting activity</p>
+  <div id="detailsModal" class="hidden fixed inset-0 z-[9999] bg-slate-950/65 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+      <div class="min-h-full flex items-center justify-center">
+        <div class="member-modal-card bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden border border-white/40">
+          <div class="px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white flex items-center justify-between gap-4">
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.2em] text-blue-300 font-bold">Registered User</p>
+              <h2 class="text-xl font-bold mt-1">User Activity Details</h2>
+              <p class="text-sm text-slate-300 mt-1">Profile information and submitted road reports</p>
+            </div>
+            <button id="closeDetailsBtn" type="button"
+              class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              aria-label="Close user details">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
           </div>
-          <button id="closeDetailsBtn" class="w-10 h-10 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+          <div id="userDetailsContent" class="p-5 sm:p-8 max-h-[78vh] overflow-y-auto modal-scroll"></div>
         </div>
-        <div id="detailsContent" class="p-6 max-h-[80vh] overflow-y-auto custom-scroll"></div>
       </div>
     </div>
   </div>
@@ -190,7 +210,7 @@
       contribution: document.getElementById('contributionFilter'),
       resultCount: document.getElementById('resultCount'),
       modal: document.getElementById('detailsModal'),
-      details: document.getElementById('detailsContent'),
+      details: document.getElementById('userDetailsContent'),
       status: document.getElementById('firebaseStatus')
     };
 
@@ -239,7 +259,18 @@
         uid: String(pick(data, ['uid', 'userId', 'id'], id)),
         displayName,
         email,
-        photoURL: String(pick(data, ['photoURL', 'photoUrl', 'profilePhoto', 'imageUrl'], '')),
+        photoURL: String(pick(data, [
+          'photoURL',
+          'photoUrl',
+          'profilePhoto',
+          'profilePhotoUrl',
+          'profileImage',
+          'profileImageUrl',
+          'avatar',
+          'avatarUrl',
+          'picture',
+          'imageUrl'
+        ], '')),
         createdAt: pick(data, ['createdAt', 'joinedAt', 'registeredAt', 'registrationDate'], null),
         lastLogin: pick(data, [
           'lastLogin',
@@ -253,6 +284,10 @@
         ], null),
         accountStatus: String(pick(data, ['status', 'accountStatus'], 'Active'))
       };
+    }
+
+    function photoFieldStatus(user) {
+      return user.photoURL ? 'Connected' : 'No photo URL saved in Firestore';
     }
 
     function reportOwnerMatches(report, user) {
@@ -372,11 +407,29 @@
       return '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>All resolved</span>';
     }
 
-    function avatarHtml(user, size = 'w-11 h-11') {
-      if (user.photoURL) {
-        return `<img src="${escapeHtml(user.photoURL)}" alt="${escapeHtml(user.displayName)}" class="${size} rounded-full object-cover border border-slate-200" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=\'${size} rounded-full bg-blue-100 text-brand-blue flex items-center justify-center font-bold\'>${escapeHtml(user.displayName.charAt(0).toUpperCase())}</div>'">`;
-      }
-      return `<div class="${size} rounded-full bg-blue-100 text-brand-blue flex items-center justify-center font-bold">${escapeHtml(user.displayName.charAt(0).toUpperCase())}</div>`;
+    function avatarHtml(user, size = 'w-11 h-11', extraClass = '') {
+      const initial = escapeHtml((user.displayName || 'U').trim().charAt(0).toUpperCase());
+      const fallback = `
+        <div class="${size} ${extraClass} rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-brand-blue flex items-center justify-center font-bold border border-blue-200">
+          ${initial}
+        </div>`;
+
+      if (!user.photoURL) return fallback;
+
+      const safePhoto = escapeHtml(user.photoURL);
+      const safeName = escapeHtml(user.displayName);
+      return `
+        <div class="${size} ${extraClass} rounded-full relative overflow-hidden bg-blue-50 border border-slate-200">
+          <img src="${safePhoto}"
+               alt="${safeName}"
+               class="absolute inset-0 w-full h-full object-cover"
+               referrerpolicy="no-referrer"
+               loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 text-brand-blue font-bold">
+            ${initial}
+          </div>
+        </div>`;
     }
 
     function renderTable(users) {
@@ -447,83 +500,146 @@
     function openUserDetails(userId) {
       const user = allUsers.map(enrichUser).find(item => item.id === userId);
       if (!user) return;
+
       const priorities = prioritySummary(user.reports);
       const mostReported = mostReportedHazard(user.reports);
       const recentReports = user.reports.slice(0, 5);
+      const resolutionRate = user.totalReports
+        ? Math.round((user.resolvedReports / user.totalReports) * 100)
+        : 0;
+
+      const recentRows = recentReports.length
+        ? recentReports.map(report => {
+            const dateValue = pick(report, ['submit', 'timestamp', 'createdAt', 'reportedAt', 'updatedAt'], null);
+            const status = String(report.status || 'New');
+            return `
+              <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm transition-all">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-mono text-xs font-bold text-brand-blue">#${escapeHtml(report.id.substring(0, 8))}</span>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${reportStatusClass(status)}">${escapeHtml(status)}</span>
+                  </div>
+                  <p class="font-semibold text-slate-800 mt-2">${escapeHtml(pick(report, ['hazardType', 'type', 'category'], 'Road Hazard'))}</p>
+                  <p class="text-xs text-slate-400 mt-1">${escapeHtml(formatDateTime(dateValue))}</p>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center shrink-0">
+                  <i class="fa-solid fa-road-barrier"></i>
+                </div>
+              </div>`;
+          }).join('')
+        : `<div class="text-center py-10 rounded-2xl border border-dashed border-slate-300 bg-slate-50">
+             <i class="fa-solid fa-file-circle-xmark text-2xl text-slate-300"></i>
+             <p class="text-sm font-semibold text-slate-500 mt-3">No reports submitted yet</p>
+           </div>`;
 
       els.details.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section class="lg:col-span-1 bg-slate-50 rounded-xl border border-slate-200 p-6 text-center">
-            <div class="flex justify-center mb-4">${avatarHtml(user, 'w-24 h-24')}</div>
-            <h3 class="text-xl font-bold text-slate-900">${escapeHtml(user.displayName)}</h3>
-            <p class="text-sm text-slate-500 mt-1 break-all">${escapeHtml(user.email)}</p>
-            <div class="mt-4">${statusBadge(user)}</div>
-            <div class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-brand-blue text-xs font-semibold">
-              <i class="fa-brands fa-google"></i>
-              Google Account
-            </div>
-          </section>
+        <div class="space-y-6">
+          <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white p-6 sm:p-8">
+            <div class="absolute -right-14 -top-14 w-48 h-48 rounded-full bg-white/10"></div>
+            <div class="absolute right-16 -bottom-20 w-40 h-40 rounded-full bg-cyan-300/10"></div>
 
-          <section class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-xl border border-slate-200 p-5">
-              <h4 class="font-bold text-slate-800 mb-4">Account Information</h4>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div><p class="text-xs uppercase font-semibold text-slate-400">Google UID</p><p class="mt-1 font-mono text-xs text-slate-700 break-all">${escapeHtml(user.uid)}</p></div>
-                <div><p class="text-xs uppercase font-semibold text-slate-400">Account Status</p><p class="mt-1 font-semibold text-slate-700">${escapeHtml(user.accountStatus)}</p></div>
-                <div><p class="text-xs uppercase font-semibold text-slate-400">Joined</p><p class="mt-1 text-slate-700">${escapeHtml(formatDateTime(user.createdAt))}</p></div>
-                <div>
-                  <p class="text-xs uppercase font-semibold text-slate-400">Last Login</p>
-                  <p class="mt-1 text-slate-700">${user.lastLogin ? escapeHtml(formatDateTime(user.lastLogin)) : 'Not recorded by mobile app'}</p>
+            <div class="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <div class="shrink-0">${avatarHtml(user, 'w-28 h-28', 'profile-ring')}</div>
+              <div class="text-center sm:text-left min-w-0 flex-1">
+                <div class="flex flex-wrap justify-center sm:justify-start items-center gap-2">
+                  <h3 class="text-2xl font-bold break-words">${escapeHtml(user.displayName)}</h3>
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-semibold">
+                    <i class="fa-brands fa-google"></i> Google Sign-In
+                  </span>
                 </div>
-                <div>
-                  <p class="text-xs uppercase font-semibold text-slate-400">Last Activity</p>
-                  <p class="mt-1 text-slate-700">${escapeHtml(formatDateTime(user.lastActivity))}</p>
-                </div>
-                <div>
-                  <p class="text-xs uppercase font-semibold text-slate-400">Email Provider</p>
-                  <p class="mt-1 text-slate-700">${user.email.toLowerCase().endsWith('@gmail.com') ? 'Google / Gmail' : 'Google account'}</p>
+                <p class="text-blue-100 mt-2 break-all">${escapeHtml(user.email)}</p>
+                <div class="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
+                  ${statusBadge(user)}
+                  <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold">
+                    <i class="fa-solid fa-clock"></i>
+                    Last activity: ${escapeHtml(formatDateTime(user.lastActivity))}
+                  </span>
                 </div>
               </div>
             </div>
+          </section>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div class="rounded-xl border border-slate-200 p-4"><p class="text-xs text-slate-400 font-semibold uppercase">Total</p><p class="text-2xl font-bold mt-1">${user.totalReports}</p></div>
-              <div class="rounded-xl border border-amber-200 bg-amber-50 p-4"><p class="text-xs text-amber-600 font-semibold uppercase">Pending</p><p class="text-2xl font-bold text-amber-700 mt-1">${user.pendingReports}</p></div>
-              <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p class="text-xs text-emerald-600 font-semibold uppercase">Resolved</p><p class="text-2xl font-bold text-emerald-700 mt-1">${user.resolvedReports}</p></div>
-              <div class="rounded-xl border border-blue-200 bg-blue-50 p-4"><p class="text-xs text-blue-600 font-semibold uppercase">Resolution Rate</p><p class="text-2xl font-bold text-blue-700 mt-1">${user.totalReports ? Math.round((user.resolvedReports / user.totalReports) * 100) : 0}%</p></div>
+          <section class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center"><i class="fa-solid fa-file-lines"></i></div>
+              <p class="text-xs uppercase tracking-wide text-slate-400 font-bold mt-4">Total Reports</p>
+              <p class="text-3xl font-extrabold text-slate-900 mt-1">${user.totalReports}</p>
+            </div>
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <div class="w-9 h-9 rounded-xl bg-white text-amber-600 flex items-center justify-center"><i class="fa-solid fa-hourglass-half"></i></div>
+              <p class="text-xs uppercase tracking-wide text-amber-600 font-bold mt-4">Pending</p>
+              <p class="text-3xl font-extrabold text-amber-700 mt-1">${user.pendingReports}</p>
+            </div>
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <div class="w-9 h-9 rounded-xl bg-white text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-circle-check"></i></div>
+              <p class="text-xs uppercase tracking-wide text-emerald-600 font-bold mt-4">Resolved</p>
+              <p class="text-3xl font-extrabold text-emerald-700 mt-1">${user.resolvedReports}</p>
+            </div>
+            <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+              <div class="w-9 h-9 rounded-xl bg-white text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-chart-pie"></i></div>
+              <p class="text-xs uppercase tracking-wide text-indigo-600 font-bold mt-4">Resolution Rate</p>
+              <p class="text-3xl font-extrabold text-indigo-700 mt-1">${resolutionRate}%</p>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-2 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+              <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                  <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">Account Information</p>
+                  <h4 class="font-bold text-slate-800 mt-1">Google user profile</h4>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-white text-brand-blue flex items-center justify-center border border-slate-200">
+                  <i class="fa-solid fa-user-shield"></i>
+                </div>
+              </div>
+
+              <dl class="space-y-4 text-sm">
+                <div class="flex justify-between gap-5 border-b border-slate-200 pb-3">
+                  <dt class="text-slate-400">Account status</dt>
+                  <dd class="font-semibold text-slate-700">${escapeHtml(user.accountStatus)}</dd>
+                </div>
+                <div class="flex justify-between gap-5 border-b border-slate-200 pb-3">
+                  <dt class="text-slate-400">Member since</dt>
+                  <dd class="font-semibold text-slate-700 text-right">${escapeHtml(formatDateTime(user.createdAt))}</dd>
+                </div>
+                <div class="flex justify-between gap-5 border-b border-slate-200 pb-3">
+                  <dt class="text-slate-400">Last login</dt>
+                  <dd class="font-semibold text-slate-700 text-right">${user.lastLogin ? escapeHtml(formatDateTime(user.lastLogin)) : 'Not recorded'}</dd>
+                </div>
+                          </dl>
             </div>
 
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p class="text-xs text-slate-400 font-semibold uppercase">Most Reported Hazard</p>
-              <div class="flex items-center justify-between gap-4 mt-2">
-                <p class="font-bold text-slate-800">${escapeHtml(mostReported.name)}</p>
-                <span class="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-slate-600">
-                  ${mostReported.count} report${mostReported.count === 1 ? '' : 's'}
-                </span>
+            <div class="lg:col-span-3 rounded-3xl border border-slate-200 bg-white p-5">
+              <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                  <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">Reporting Overview</p>
+                  <h4 class="font-bold text-slate-800 mt-1">Hazard patterns</h4>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-slate-400">Most reported</p>
+                  <p class="font-bold text-brand-blue">${escapeHtml(mostReported.name)} (${mostReported.count})</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-4 rounded-2xl bg-red-50 border border-red-100"><p class="text-xs font-bold text-red-500">CRITICAL</p><p class="text-2xl font-extrabold text-red-700 mt-1">${priorities.Critical}</p></div>
+                <div class="p-4 rounded-2xl bg-orange-50 border border-orange-100"><p class="text-xs font-bold text-orange-500">HIGH</p><p class="text-2xl font-extrabold text-orange-700 mt-1">${priorities.High}</p></div>
+                <div class="p-4 rounded-2xl bg-amber-50 border border-amber-100"><p class="text-xs font-bold text-amber-500">MEDIUM</p><p class="text-2xl font-extrabold text-amber-700 mt-1">${priorities.Medium}</p></div>
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100"><p class="text-xs font-bold text-emerald-500">LOW</p><p class="text-2xl font-extrabold text-emerald-700 mt-1">${priorities.Low}</p></div>
               </div>
             </div>
           </section>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <section class="bg-white rounded-xl border border-slate-200 p-5">
-            <h4 class="font-bold text-slate-800 mb-4">Priority Breakdown</h4>
-            <div class="space-y-3 text-sm">
-              ${Object.entries(priorities).map(([name, count]) => `<div class="flex items-center justify-between"><span class="text-slate-600">${name}</span><strong>${count}</strong></div>`).join('')}
+          <section class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <div class="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-bold">Recent Reports</p>
+                <h4 class="font-bold text-slate-800 mt-1">Latest submitted hazards</h4>
+              </div>
+              <span class="text-xs font-semibold text-slate-500">${recentReports.length} shown</span>
             </div>
-          </section>
-
-          <section class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="font-bold text-slate-800">Recent Reports</h4>
-              <span class="text-xs text-slate-400">Latest 5</span>
-            </div>
-            ${recentReports.length ? `<div class="divide-y divide-slate-100">${recentReports.map(report => {
-              const reportId = pick(report, ['reportId', 'id'], report.id);
-              const type = pick(report, ['hazardType', 'type', 'category'], 'Road Hazard');
-              const date = pick(report, ['submit', 'timestamp', 'createdAt', 'date', 'reportedAt', 'updatedAt'], null);
-              return `<div class="py-3 flex items-center justify-between gap-4"><div><p class="font-semibold text-slate-800">${escapeHtml(reportId)}</p><p class="text-xs text-slate-400 mt-0.5">${escapeHtml(type)} · ${escapeHtml(formatDate(date))}</p></div><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${reportStatusClass(report.status)}">${escapeHtml(pick(report, ['status'], 'New'))}</span></div>`;
-            }).join('')}</div>` : '<p class="text-sm text-slate-400 py-6 text-center">This user has not submitted any reports.</p>'}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${recentRows}</div>
           </section>
         </div>`;
 
